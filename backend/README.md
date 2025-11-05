@@ -3,6 +3,21 @@
 **IN3111 - Network Programming Assignment 2**
 University of Moratuwa
 
+---
+
+## 🚀 Quick Start (For Team Members)
+
+**Want to run this immediately?** See **[QUICK_START.md](QUICK_START.md)** for a 5-minute setup guide!
+
+**TL;DR:**
+```bash
+cd backend
+mvn spring-boot:run
+```
+Then open: http://localhost:8080/swagger-ui.html
+
+---
+
 ## Overview
 
 This is the backend for the Real-Time Auction System, demonstrating advanced network programming concepts:
