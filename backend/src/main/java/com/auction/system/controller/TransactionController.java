@@ -26,11 +26,26 @@ public class TransactionController {
     /**
      * Process payment for auction (SSL/TLS secure)
      * POST /api/transactions/payment
+     * Required fields: auctionId, buyerId, cardNumber, cvv
      */
     @PostMapping("/payment")
     public ResponseEntity<?> processPayment(@RequestBody Map<String, Object> paymentRequest) {
         log.info("REST API: Process payment");
         try {
+            // Validate required fields
+            if (!paymentRequest.containsKey("auctionId")) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Missing required field: auctionId"));
+            }
+            if (!paymentRequest.containsKey("buyerId")) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Missing required field: buyerId"));
+            }
+            if (!paymentRequest.containsKey("cardNumber")) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Missing required field: cardNumber"));
+            }
+            if (!paymentRequest.containsKey("cvv")) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Missing required field: cvv"));
+            }
+
             Long auctionId = Long.valueOf(paymentRequest.get("auctionId").toString());
             Long buyerId = Long.valueOf(paymentRequest.get("buyerId").toString());
             String cardNumber = paymentRequest.get("cardNumber").toString();
@@ -42,9 +57,9 @@ public class TransactionController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            log.error("Error processing payment", e);
+            log.error("Error processing payment: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Payment processing failed"));
+                    .body(Map.of("error", "Payment processing failed: " + e.getMessage()));
         }
     }
 

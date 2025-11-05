@@ -25,6 +25,7 @@ public class AuctionService {
 
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
+    private final com.auction.system.repository.BidRepository bidRepository;
 
     /**
      * Create a new auction
@@ -89,6 +90,16 @@ public class AuctionService {
 
         for (Auction auction : expiredAuctions) {
             log.info("Closing expired auction: {} - {}", auction.getAuctionId(), auction.getItemName());
+
+            // Find and set the winner (highest bidder)
+            Optional<com.auction.system.entity.Bid> highestBid = bidRepository.findHighestBidForAuction(auction);
+            if (highestBid.isPresent()) {
+                auction.setWinner(highestBid.get().getBidder());
+                log.info("Winner set for auction {}: User {}", auction.getAuctionId(), highestBid.get().getBidder().getUserId());
+            } else {
+                log.info("No bids found for auction {}, no winner set", auction.getAuctionId());
+            }
+
             auction.setStatus(Auction.AuctionStatus.ENDED);
             auctionRepository.save(auction);
         }

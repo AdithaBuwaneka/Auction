@@ -27,14 +27,15 @@ public class UserController {
      * POST /api/users/register
      */
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody User user) {
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
         log.info("REST API: Register user request - {}", user.getUsername());
         try {
             User registeredUser = userService.registerUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
         } catch (Exception e) {
             log.error("Error registering user: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("error", e.getMessage()));
         }
     }
 
