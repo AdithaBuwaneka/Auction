@@ -4,6 +4,7 @@ import com.auction.system.dto.BidRequest;
 import com.auction.system.dto.BidResponse;
 import com.auction.system.entity.Auction;
 import com.auction.system.entity.Bid;
+import com.auction.system.entity.Notification;
 import com.auction.system.entity.User;
 import com.auction.system.network.multicast.MulticastBroadcaster;
 import com.auction.system.repository.AuctionRepository;
@@ -33,6 +34,9 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
     private final MulticastBroadcaster multicastBroadcaster;
+    private final WalletService walletService;
+    private final NotificationService notificationService;
+    private final com.auction.system.websocket.WebSocketEventService webSocketEventService;
 
     /**
      * Place a bid on an auction
@@ -90,6 +94,24 @@ public class BidService {
                     auction.getCurrentPrice());
         }
 
+        // Step 6.5: Check if user has sufficient available balance
+        if (bidder.getAvailableBalance().compareTo(bidRequest.getBidAmount()) < 0) {
+            log.warn("Bid rejected - Insufficient funds. Available: {}, Required: {}",
+                    bidder.getAvailableBalance(), bidRequest.getBidAmount());
+            return BidResponse.failure("Insufficient available balance. You have $" +
+                    bidder.getAvailableBalance() + " but need $" + bidRequest.getBidAmount());
+        }
+
+        // Step 6.6: Freeze the bid amount
+        try {
+            walletService.freezeAmount(bidder.getUserId(), bidRequest.getBidAmount(),
+                    "Bid on " + auction.getItemName(), auction.getAuctionId(), null);
+            log.info("Frozen ${} from user {}", bidRequest.getBidAmount(), bidder.getUserId());
+        } catch (Exception e) {
+            log.error("Failed to freeze bid amount", e);
+            return BidResponse.failure("Failed to freeze bid amount: " + e.getMessage());
+        }
+
         // Step 7: Create and save the bid
         Bid bid = Bid.builder()
                 .auction(auction)
@@ -101,13 +123,36 @@ public class BidService {
         bid = bidRepository.save(bid);
         log.info("Bid saved - ID: {}", bid.getBidId());
 
-        // Step 8: Update previous winning bids to OUTBID
+        // Step 8: Update previous winning bids to OUTBID and unfreeze their money
         List<Bid> previousBids = bidRepository.findByAuctionOrderByBidAmountDesc(auction);
         for (Bid previousBid : previousBids) {
             if (!previousBid.getBidId().equals(bid.getBidId()) &&
                     previousBid.getStatus() == Bid.BidStatus.WINNING) {
                 previousBid.setStatus(Bid.BidStatus.OUTBID);
                 bidRepository.save(previousBid);
+
+                // Unfreeze the previous bidder's money
+                try {
+                    walletService.unfreezeAmount(
+                            previousBid.getBidder().getUserId(),
+                            previousBid.getBidAmount(),
+                            "Outbid on " + auction.getItemName(),
+                            auction.getAuctionId(),
+                            previousBid.getBidId()
+                    );
+                    log.info("Unfrozen ${} for user {} (outbid)",
+                            previousBid.getBidAmount(), previousBid.getBidder().getUserId());
+
+                    // Send notification to outbid user
+                    notificationService.createNotification(
+                            previousBid.getBidder(),
+                            Notification.NotificationType.OUTBID,
+                            "You were outbid on '" + auction.getItemName() +
+                                    "'. New price: $" + bid.getBidAmount()
+                    );
+                } catch (Exception e) {
+                    log.error("Failed to unfreeze amount for outbid user", e);
+                }
             }
         }
 
@@ -132,6 +177,41 @@ public class BidService {
                 bidder.getUserId(),
                 bidder.getUsername()
         );
+
+        // Send notification to bidder
+        try {
+            notificationService.createNotification(
+                    bidder,
+                    Notification.NotificationType.BID_PLACED,
+                    "Your bid of $" + bid.getBidAmount() + " on '" +
+                            auction.getItemName() + "' was placed successfully"
+            );
+        } catch (Exception e) {
+            log.error("Failed to create bid notification", e);
+        }
+
+        // Broadcast real-time update via WebSocket
+        try {
+            webSocketEventService.broadcastNewBid(auction.getAuctionId(), java.util.Map.of(
+                    "bidId", bid.getBidId(),
+                    "auctionId", auction.getAuctionId(),
+                    "itemName", auction.getItemName(),
+                    "bidAmount", bid.getBidAmount(),
+                    "bidderName", bidder.getUsername(),
+                    "bidderId", bidder.getUserId(),
+                    "bidTime", bid.getBidTime(),
+                    "newDeadline", auction.getCurrentDeadline(),
+                    "currentPrice", auction.getCurrentPrice()
+            ));
+
+            webSocketEventService.broadcastAuctionUpdate(auction.getAuctionId(), java.util.Map.of(
+                    "currentPrice", auction.getCurrentPrice(),
+                    "currentDeadline", auction.getCurrentDeadline(),
+                    "status", auction.getStatus().toString()
+            ));
+        } catch (Exception e) {
+            log.error("Failed to broadcast WebSocket update", e);
+        }
 
         return BidResponse.success(
                 bid.getBidId(),
@@ -177,6 +257,22 @@ public class BidService {
             throw new IllegalStateException("Cannot retract bid after 1 minute");
         }
 
+        // Unfreeze the bid amount
+        try {
+            walletService.unfreezeAmount(
+                    bid.getBidder().getUserId(),
+                    bid.getBidAmount(),
+                    "Bid retracted on " + bid.getAuction().getItemName(),
+                    bid.getAuction().getAuctionId(),
+                    bid.getBidId()
+            );
+            log.info("Unfrozen ${} for user {} (bid retracted)",
+                    bid.getBidAmount(), bid.getBidder().getUserId());
+        } catch (Exception e) {
+            log.error("Failed to unfreeze retracted bid amount", e);
+            throw new RuntimeException("Failed to unfreeze bid amount: " + e.getMessage());
+        }
+
         // Check if this is the winning bid
         if (bid.getStatus() == Bid.BidStatus.WINNING) {
             // Find previous bid and make it winning
@@ -195,6 +291,19 @@ public class BidService {
                 previousWinningBid.setStatus(Bid.BidStatus.WINNING);
                 bidRepository.save(previousWinningBid);
                 auction.setCurrentPrice(previousWinningBid.getBidAmount());
+
+                // Re-freeze the previous bidder's money
+                try {
+                    walletService.freezeAmount(
+                            previousWinningBid.getBidder().getUserId(),
+                            previousWinningBid.getBidAmount(),
+                            "Bid on " + auction.getItemName() + " (now winning after retraction)",
+                            auction.getAuctionId(),
+                            previousWinningBid.getBidId()
+                    );
+                } catch (Exception e) {
+                    log.error("Failed to re-freeze previous bidder's amount", e);
+                }
             } else {
                 auction.setCurrentPrice(auction.getStartingPrice());
             }

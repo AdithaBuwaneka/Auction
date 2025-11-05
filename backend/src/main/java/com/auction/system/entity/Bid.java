@@ -59,6 +59,8 @@ public class Bid {
         ACCEPTED,       // Bid accepted and recorded
         REJECTED,       // Bid rejected (amount too low, auction ended, etc.)
         OUTBID,         // Bid was valid but has been outbid by another user
-        WINNING         // Currently the highest bid
+        WINNING,        // Currently the highest bid
+        WON,            // Auction ended and this bid won
+        LOST            // Auction ended and this bid lost
     }
 }

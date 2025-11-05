@@ -56,11 +56,12 @@ public class Notification {
      * Notification Type Enum
      */
     public enum NotificationType {
+        BID_PLACED,      // User's bid was placed successfully
         OUTBID,          // User has been outbid
-        WON,             // User won the auction
-        LOST,            // User lost the auction
+        AUCTION_WON,     // User won the auction
+        AUCTION_LOST,    // User lost the auction
+        AUCTION_ENDED,   // Auction has ended
         ENDING_SOON,     // Auction ending in 5 minutes
-        STARTED,         // Auction has started
-        ENDED            // Auction has ended
+        STARTED          // Auction has started
     }
 }

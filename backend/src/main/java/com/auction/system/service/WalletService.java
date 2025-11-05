@@ -272,6 +272,155 @@ public class WalletService {
     }
 
     /**
+     * Freeze amount when user places bid
+     */
+    @Transactional
+    public WalletTransaction freezeAmount(Long userId, BigDecimal amount, String description,
+                                          Long auctionId, Long bidId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Freeze amount must be positive");
+        }
+
+        if (user.getAvailableBalance().compareTo(amount) < 0) {
+            throw new IllegalArgumentException("Insufficient available balance");
+        }
+
+        BigDecimal balanceBefore = user.getBalance();
+        BigDecimal frozenBefore = user.getFrozenBalance();
+        BigDecimal availableBefore = user.getAvailableBalance();
+
+        user.setFrozenBalance(user.getFrozenBalance().add(amount));
+
+        BigDecimal balanceAfter = user.getBalance();
+        BigDecimal frozenAfter = user.getFrozenBalance();
+        BigDecimal availableAfter = user.getAvailableBalance();
+
+        userRepository.save(user);
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .user(user)
+                .transactionType(WalletTransaction.TransactionType.FREEZE)
+                .amount(amount)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .frozenBefore(frozenBefore)
+                .frozenAfter(frozenAfter)
+                .availableBefore(availableBefore)
+                .availableAfter(availableAfter)
+                .description(description != null ? description : "Amount frozen for bid")
+                .build();
+
+        walletTransactionRepository.save(transaction);
+        log.info("Freeze: User {} froze ${}, Frozen: {} -> {}, Available: {} -> {}",
+                userId, amount, frozenBefore, frozenAfter, availableBefore, availableAfter);
+
+        return transaction;
+    }
+
+    /**
+     * Unfreeze amount when user is outbid or bid is retracted
+     */
+    @Transactional
+    public WalletTransaction unfreezeAmount(Long userId, BigDecimal amount, String description,
+                                            Long auctionId, Long bidId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Unfreeze amount must be positive");
+        }
+
+        if (user.getFrozenBalance().compareTo(amount) < 0) {
+            throw new IllegalArgumentException("Insufficient frozen balance");
+        }
+
+        BigDecimal balanceBefore = user.getBalance();
+        BigDecimal frozenBefore = user.getFrozenBalance();
+        BigDecimal availableBefore = user.getAvailableBalance();
+
+        user.setFrozenBalance(user.getFrozenBalance().subtract(amount));
+
+        BigDecimal balanceAfter = user.getBalance();
+        BigDecimal frozenAfter = user.getFrozenBalance();
+        BigDecimal availableAfter = user.getAvailableBalance();
+
+        userRepository.save(user);
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .user(user)
+                .transactionType(WalletTransaction.TransactionType.UNFREEZE)
+                .amount(amount)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .frozenBefore(frozenBefore)
+                .frozenAfter(frozenAfter)
+                .availableBefore(availableBefore)
+                .availableAfter(availableAfter)
+                .description(description != null ? description : "Amount unfrozen")
+                .build();
+
+        walletTransactionRepository.save(transaction);
+        log.info("Unfreeze: User {} unfroze ${}, Frozen: {} -> {}, Available: {} -> {}",
+                userId, amount, frozenBefore, frozenAfter, availableBefore, availableAfter);
+
+        return transaction;
+    }
+
+    /**
+     * Deduct frozen amount when auction ends (winner pays)
+     */
+    @Transactional
+    public WalletTransaction deductFrozenAmount(Long userId, BigDecimal amount, String description,
+                                                Long auctionId, Long bidId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Deduct amount must be positive");
+        }
+
+        if (user.getFrozenBalance().compareTo(amount) < 0) {
+            throw new IllegalArgumentException("Insufficient frozen balance");
+        }
+
+        BigDecimal balanceBefore = user.getBalance();
+        BigDecimal frozenBefore = user.getFrozenBalance();
+        BigDecimal availableBefore = user.getAvailableBalance();
+
+        // Deduct from both total balance and frozen balance
+        user.setBalance(user.getBalance().subtract(amount));
+        user.setFrozenBalance(user.getFrozenBalance().subtract(amount));
+
+        BigDecimal balanceAfter = user.getBalance();
+        BigDecimal frozenAfter = user.getFrozenBalance();
+        BigDecimal availableAfter = user.getAvailableBalance();
+
+        userRepository.save(user);
+
+        WalletTransaction transaction = WalletTransaction.builder()
+                .user(user)
+                .transactionType(WalletTransaction.TransactionType.DEDUCT)
+                .amount(amount)
+                .balanceBefore(balanceBefore)
+                .balanceAfter(balanceAfter)
+                .frozenBefore(frozenBefore)
+                .frozenAfter(frozenAfter)
+                .availableBefore(availableBefore)
+                .availableAfter(availableAfter)
+                .description(description != null ? description : "Payment for auction")
+                .build();
+
+        walletTransactionRepository.save(transaction);
+        log.info("Deduct: User {} paid ${}, Balance: {} -> {}, Frozen: {} -> {}",
+                userId, amount, balanceBefore, balanceAfter, frozenBefore, frozenAfter);
+
+        return transaction;
+    }
+
+    /**
      * Get wallet summary
      */
     public java.util.Map<String, Object> getWalletSummary(Long userId) {
