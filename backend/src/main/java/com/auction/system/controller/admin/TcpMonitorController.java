@@ -1,6 +1,7 @@
 package com.auction.system.controller.admin;
 
 import com.auction.system.network.tcp.TCPBidServer;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Admin endpoints for monitoring TCP connections
  * Member 1's Feature
  */
+@Tag(name = "11. Network Monitoring - TCP (Member 1)", description = "Monitor TCP server connections and statistics (Port 8081)")
 @RestController
 @RequestMapping("/api/admin/tcp")
 @RequiredArgsConstructor

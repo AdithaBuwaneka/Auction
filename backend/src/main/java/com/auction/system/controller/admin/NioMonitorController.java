@@ -1,5 +1,6 @@
 package com.auction.system.controller.admin;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +16,7 @@ import java.util.*;
  * Admin endpoints for monitoring NIO performance
  * Member 4's Feature
  */
+@Tag(name = "11. Network Monitoring - NIO (Member 4)", description = "Monitor NIO server connections and statistics (Port 8082)")
 @RestController
 @RequestMapping("/api/admin/nio")
 @RequiredArgsConstructor

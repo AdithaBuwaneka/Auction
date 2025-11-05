@@ -2,6 +2,7 @@ package com.auction.system.controller;
 
 import com.auction.system.entity.Transaction;
 import com.auction.system.service.TransactionService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import java.util.Map;
  * Transaction Controller
  * REST API endpoints for payment/transaction operations
  */
+@Tag(name = "6. Transactions", description = "Payment processing and transaction history (secure via SSL:8443)")
 @RestController
 @RequestMapping("/api/transactions")
 @RequiredArgsConstructor

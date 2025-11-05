@@ -2,6 +2,7 @@ package com.auction.system.controller.admin;
 
 import com.auction.system.entity.User;
 import com.auction.system.service.AdminService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.Map;
  * Admin Controller
  * Admin-only endpoints for user management and statistics
  */
+@Tag(name = "9. Admin", description = "Admin-only endpoints (requires ADMIN role)")
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor

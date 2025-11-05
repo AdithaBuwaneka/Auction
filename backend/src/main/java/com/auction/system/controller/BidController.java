@@ -4,6 +4,7 @@ import com.auction.system.dto.BidRequest;
 import com.auction.system.dto.BidResponse;
 import com.auction.system.entity.Bid;
 import com.auction.system.service.BidService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ import java.util.List;
 @RequestMapping("/api/bids")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "4. Bidding", description = "Place and view bids on auctions (also available via TCP:8081, NIO:8082)")
 public class BidController {
 
     private final BidService bidService;

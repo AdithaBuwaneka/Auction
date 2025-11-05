@@ -2,6 +2,7 @@ package com.auction.system.controller;
 
 import com.auction.system.entity.Notification;
 import com.auction.system.service.NotificationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import java.util.Map;
  * Notification Controller
  * REST API endpoints for user notifications
  */
+@Tag(name = "7. Notifications", description = "Real-time notifications (also via WebSocket and Multicast:4446)")
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor

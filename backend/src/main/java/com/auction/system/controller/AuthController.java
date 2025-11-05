@@ -7,6 +7,12 @@ import com.auction.system.entity.User;
 import com.auction.system.entity.UserRole;
 import com.auction.system.security.JwtUtil;
 import com.auction.system.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +31,7 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
+@Tag(name = "1. Authentication", description = "User registration and login endpoints")
 public class AuthController {
 
     private final UserService userService;
@@ -34,6 +41,14 @@ public class AuthController {
      * Register a new user
      * POST /api/auth/register
      */
+    @Operation(summary = "Register new user",
+               description = "Create a new user account and receive JWT token. Users start with 10,000 balance.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "User registered successfully",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request or username/email already exists",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Registration request for username: {}", request.getUsername());
@@ -77,6 +92,14 @@ public class AuthController {
      * Login user
      * POST /api/auth/login
      */
+    @Operation(summary = "Login user",
+               description = "Authenticate user and receive JWT token for protected endpoints")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful",
+                    content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         log.info("Login request for username: {}", request.getUsername());
