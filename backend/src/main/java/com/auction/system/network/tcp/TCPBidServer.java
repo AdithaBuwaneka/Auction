@@ -15,8 +15,13 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * TCP Socket Server for Bidding (Member 1)
@@ -52,6 +57,15 @@ public class TCPBidServer {
     private ExecutorService executorService;
     private volatile boolean running = false;
 
+    // Monitoring fields
+    private final AtomicInteger activeConnections = new AtomicInteger(0);
+    private final AtomicLong totalConnections = new AtomicLong(0);
+    private final AtomicLong bidsProcessed = new AtomicLong(0);
+    private final AtomicLong totalResponseTime = new AtomicLong(0);
+    private final Map<String, ConnectionInfo> activeConnectionMap = new ConcurrentHashMap<>();
+    private final List<ActivityLog> recentActivity = Collections.synchronizedList(new ArrayList<>());
+    private long serverStartTime;
+
     /**
      * Start TCP server when application is ready
      */
@@ -63,6 +77,7 @@ public class TCPBidServer {
             try {
                 serverSocket = new ServerSocket(port);
                 running = true;
+                serverStartTime = System.currentTimeMillis();
 
                 log.info("╔═══════════════════════════════════════════════════════════╗");
                 log.info("║  TCP BID SERVER STARTED (Member 1)                       ║");
@@ -74,9 +89,15 @@ public class TCPBidServer {
                 while (running) {
                     try {
                         Socket clientSocket = serverSocket.accept();
-                        log.info("🔌 New TCP connection from: {}:{}",
-                                clientSocket.getInetAddress().getHostAddress(),
-                                clientSocket.getPort());
+                        String clientId = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
+
+                        log.info("🔌 New TCP connection from: {}", clientId);
+
+                        // Track connection
+                        totalConnections.incrementAndGet();
+                        activeConnections.incrementAndGet();
+                        activeConnectionMap.put(clientId, new ConnectionInfo(clientId, LocalDateTime.now()));
+                        logActivity("CONNECTION", clientId, "New connection established");
 
                         // Handle each client in separate thread (Member 2: Multithreading)
                         executorService.submit(() -> handleClient(clientSocket));
@@ -99,6 +120,7 @@ public class TCPBidServer {
      */
     private void handleClient(Socket clientSocket) {
         String clientAddress = clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
+        long startTime = System.currentTimeMillis();
 
         try {
             // Set socket timeout
@@ -147,14 +169,22 @@ public class TCPBidServer {
 
             BidResponse response = bidService.placeBid(bidRequest);
 
+            // Track bid processing
+            bidsProcessed.incrementAndGet();
+            long responseTime = System.currentTimeMillis() - startTime;
+            totalResponseTime.addAndGet(responseTime);
+
             // Send response
             sendResponse(out, response);
 
             if (response.isSuccess()) {
                 log.info("✅ Bid ACCEPTED from {}: BidID={}, NewPrice={}",
                         clientAddress, response.getBidId(), response.getBidAmount());
+                logActivity("BID_ACCEPTED", clientAddress,
+                    "Bid accepted: Auction=" + bidRequest.getAuctionId() + ", Amount=" + bidRequest.getBidAmount());
             } else {
                 log.warn("❌ Bid REJECTED from {}: {}", clientAddress, response.getMessage());
+                logActivity("BID_REJECTED", clientAddress, response.getMessage());
             }
 
         } catch (SocketTimeoutException e) {
@@ -164,6 +194,9 @@ public class TCPBidServer {
         } finally {
             try {
                 clientSocket.close();
+                activeConnections.decrementAndGet();
+                activeConnectionMap.remove(clientAddress);
+                logActivity("DISCONNECT", clientAddress, "Connection closed");
                 log.debug("🔌 Connection closed: {}", clientAddress);
             } catch (IOException e) {
                 log.error("Error closing socket", e);
@@ -203,5 +236,89 @@ public class TCPBidServer {
                 log.error("Error closing server socket", e);
             }
         }
+    }
+
+    // ========== Monitoring Methods ==========
+
+    public boolean isRunning() {
+        return running;
+    }
+
+    public int getActiveConnectionCount() {
+        return activeConnections.get();
+    }
+
+    public long getTotalConnectionCount() {
+        return totalConnections.get();
+    }
+
+    public long getBidsProcessed() {
+        return bidsProcessed.get();
+    }
+
+    public long getUptimeMillis() {
+        return running ? System.currentTimeMillis() - serverStartTime : 0;
+    }
+
+    public long getAverageResponseTime() {
+        long processed = bidsProcessed.get();
+        return processed > 0 ? totalResponseTime.get() / processed : 0;
+    }
+
+    public List<Map<String, Object>> getConnectionDetails() {
+        List<Map<String, Object>> connections = new ArrayList<>();
+        activeConnectionMap.values().forEach(conn -> {
+            Map<String, Object> detail = new HashMap<>();
+            detail.put("clientId", conn.getClientId());
+            detail.put("connectedAt", conn.getConnectedAt().toString());
+            detail.put("duration", java.time.Duration.between(conn.getConnectedAt(), LocalDateTime.now()).getSeconds() + "s");
+            connections.add(detail);
+        });
+        return connections;
+    }
+
+    public List<Map<String, Object>> getRecentActivity() {
+        List<Map<String, Object>> activities = new ArrayList<>();
+        synchronized (recentActivity) {
+            int start = Math.max(0, recentActivity.size() - 50); // Last 50 activities
+            for (int i = start; i < recentActivity.size(); i++) {
+                ActivityLog log = recentActivity.get(i);
+                Map<String, Object> activity = new HashMap<>();
+                activity.put("type", log.getType());
+                activity.put("clientId", log.getClientId());
+                activity.put("message", log.getMessage());
+                activity.put("timestamp", log.getTimestamp().toString());
+                activities.add(activity);
+            }
+        }
+        return activities;
+    }
+
+    private void logActivity(String type, String clientId, String message) {
+        synchronized (recentActivity) {
+            recentActivity.add(new ActivityLog(type, clientId, message, LocalDateTime.now()));
+            // Keep only last 100 activities
+            if (recentActivity.size() > 100) {
+                recentActivity.remove(0);
+            }
+        }
+    }
+
+    // ========== Helper Classes ==========
+
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    private static class ConnectionInfo {
+        private String clientId;
+        private LocalDateTime connectedAt;
+    }
+
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    private static class ActivityLog {
+        private String type;
+        private String clientId;
+        private String message;
+        private LocalDateTime timestamp;
     }
 }

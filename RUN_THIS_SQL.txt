@@ -1,0 +1,17 @@
+##############################################################
+# IMPORTANT: Run this SQL command on your database NOW!
+##############################################################
+
+Go to Neon Console: https://console.neon.tech
+Select your project > SQL Editor
+Copy and paste this SQL:
+
+ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'USER';
+
+Then restart backend:
+cd backend
+mvn spring-boot:run
+
+That's it! Authentication will work after this.
+
+##############################################################

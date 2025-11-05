@@ -12,6 +12,8 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * UDP Multicast Broadcaster (Member 3)
@@ -40,6 +42,13 @@ public class MulticastBroadcaster {
     private InetAddress group;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // Monitoring fields
+    private final AtomicLong totalBroadcasts = new AtomicLong(0);
+    private final AtomicLong priceUpdates = new AtomicLong(0);
+    private final AtomicLong statusUpdates = new AtomicLong(0);
+    private final List<BroadcastLog> recentBroadcasts = Collections.synchronizedList(new ArrayList<>());
+    private long initTime;
+
     /**
      * Initialize multicast socket
      */
@@ -47,6 +56,7 @@ public class MulticastBroadcaster {
         try {
             socket = new MulticastSocket();
             group = InetAddress.getByName(groupAddress);
+            initTime = System.currentTimeMillis();
 
             log.info("╔═══════════════════════════════════════════════════════════╗");
             log.info("║  UDP MULTICAST BROADCASTER INITIALIZED (Member 3)        ║");
@@ -86,6 +96,11 @@ public class MulticastBroadcaster {
             DatagramPacket packet = new DatagramPacket(data, data.length, group, port);
             socket.send(packet);
 
+            // Track broadcast
+            totalBroadcasts.incrementAndGet();
+            priceUpdates.incrementAndGet();
+            logBroadcast("PRICE_UPDATE", auctionId, itemName, newPrice.toString());
+
             log.info("📡 MULTICAST SENT: Auction {} - {} = ${} (by {})",
                     auctionId, itemName, newPrice, bidderName);
 
@@ -116,6 +131,11 @@ public class MulticastBroadcaster {
 
             DatagramPacket packet = new DatagramPacket(data, data.length, group, port);
             socket.send(packet);
+
+            // Track broadcast
+            totalBroadcasts.incrementAndGet();
+            statusUpdates.incrementAndGet();
+            logBroadcast("STATUS_UPDATE", auctionId, itemName, status);
 
             log.info("📡 MULTICAST SENT: Auction {} - Status: {}", auctionId, status);
 
@@ -159,5 +179,67 @@ public class MulticastBroadcaster {
         private String status;
         private String message;
         private String timestamp;
+    }
+
+    // ========== Monitoring Methods ==========
+
+    public long getTotalBroadcasts() {
+        return totalBroadcasts.get();
+    }
+
+    public long getPriceUpdates() {
+        return priceUpdates.get();
+    }
+
+    public long getStatusUpdates() {
+        return statusUpdates.get();
+    }
+
+    public String getMulticastGroup() {
+        return groupAddress + ":" + port;
+    }
+
+    public boolean isInitialized() {
+        return socket != null && !socket.isClosed();
+    }
+
+    public long getUptimeMillis() {
+        return initTime > 0 ? System.currentTimeMillis() - initTime : 0;
+    }
+
+    public List<Map<String, Object>> getRecentBroadcasts() {
+        List<Map<String, Object>> broadcasts = new ArrayList<>();
+        synchronized (recentBroadcasts) {
+            recentBroadcasts.forEach(log -> {
+                Map<String, Object> broadcast = new HashMap<>();
+                broadcast.put("type", log.getType());
+                broadcast.put("auctionId", log.getAuctionId());
+                broadcast.put("itemName", log.getItemName());
+                broadcast.put("details", log.getDetails());
+                broadcast.put("timestamp", log.getTimestamp().toString());
+                broadcasts.add(broadcast);
+            });
+        }
+        return broadcasts;
+    }
+
+    private void logBroadcast(String type, Long auctionId, String itemName, String details) {
+        synchronized (recentBroadcasts) {
+            recentBroadcasts.add(new BroadcastLog(type, auctionId, itemName, details, LocalDateTime.now()));
+            // Keep only last 100
+            if (recentBroadcasts.size() > 100) {
+                recentBroadcasts.remove(0);
+            }
+        }
+    }
+
+    @Data
+    @lombok.AllArgsConstructor
+    private static class BroadcastLog {
+        private String type;
+        private Long auctionId;
+        private String itemName;
+        private String details;
+        private LocalDateTime timestamp;
     }
 }

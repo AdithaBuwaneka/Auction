@@ -4,6 +4,8 @@ import com.auction.system.entity.User;
 import com.auction.system.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
      * Register a new user
@@ -36,8 +39,8 @@ public class UserService {
             throw new RuntimeException("Email already exists");
         }
 
-        // In production, hash the password using BCrypt
-        // user.setPasswordHash(passwordEncoder.encode(user.getPassword()));
+        // Hash the password using BCrypt
+        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
 
         return userRepository.save(user);
     }
@@ -64,13 +67,12 @@ public class UserService {
     }
 
     /**
-     * Authenticate user (simplified for demo)
+     * Authenticate user with password hashing
      */
     public Optional<User> authenticateUser(String username, String password) {
         Optional<User> user = userRepository.findByUsername(username);
 
-        if (user.isPresent() && user.get().getPasswordHash().equals(password)) {
-            // In production, use passwordEncoder.matches(password, user.getPasswordHash())
+        if (user.isPresent() && passwordEncoder.matches(password, user.get().getPasswordHash())) {
             return user;
         }
 
