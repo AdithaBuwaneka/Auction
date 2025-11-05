@@ -1,6 +1,9 @@
 package com.auction.system.controller;
 
+import com.auction.system.dto.AuctionCreateRequest;
 import com.auction.system.entity.Auction;
+import com.auction.system.entity.User;
+import com.auction.system.repository.UserRepository;
 import com.auction.system.service.AuctionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +11,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -21,20 +28,67 @@ import java.util.List;
 public class AuctionController {
 
     private final AuctionService auctionService;
+    private final UserRepository userRepository;
 
     /**
      * Create a new auction
      * POST /api/auctions
      */
     @PostMapping
-    public ResponseEntity<Auction> createAuction(@RequestBody Auction auction) {
-        log.info("REST API: Create auction request - {}", auction.getItemName());
+    public ResponseEntity<?> createAuction(@RequestBody AuctionCreateRequest request) {
+        log.info("REST API: Create auction request - {}", request.getItemName());
         try {
+            // Validate request
+            if (request.getItemName() == null || request.getItemName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error", "Item name is required"));
+            }
+            if (request.getStartingPrice() == null || request.getStartingPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error", "Starting price must be greater than 0"));
+            }
+            if (request.getSellerId() == null) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error", "Seller ID is required"));
+            }
+
+            // Get seller
+            User seller = userRepository.findById(request.getSellerId())
+                    .orElseThrow(() -> new RuntimeException("Seller not found with ID: " + request.getSellerId()));
+
+            // Parse dates
+            LocalDateTime startTime = request.getStartTime() != null
+                    ? LocalDateTime.parse(request.getStartTime(), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                    : LocalDateTime.now();
+
+            LocalDateTime mandatoryEndTime = LocalDateTime.parse(
+                    request.getMandatoryEndTime(),
+                    DateTimeFormatter.ISO_LOCAL_DATE_TIME
+            );
+
+            // Validate dates
+            if (mandatoryEndTime.isBefore(LocalDateTime.now())) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error", "Mandatory end time must be in the future"));
+            }
+            if (mandatoryEndTime.isBefore(startTime)) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("error", "Mandatory end time must be after start time"));
+            }
+
+            // Build auction
+            Auction auction = Auction.builder()
+                    .itemName(request.getItemName())
+                    .description(request.getDescription())
+                    .imageUrl(request.getImageUrl())
+                    .startingPrice(request.getStartingPrice())
+                    .seller(seller)
+                    .startTime(startTime)
+                    .mandatoryEndTime(mandatoryEndTime)
+                    .bidGapDuration(Duration.ofSeconds(request.getBidGapDurationSeconds() != null ? request.getBidGapDurationSeconds() : 120))
+                    .build();
+
             Auction createdAuction = auctionService.createAuction(auction);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAuction);
         } catch (Exception e) {
             log.error("Error creating auction", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("error", e.getMessage()));
         }
     }
 

@@ -60,8 +60,9 @@ public class BidService {
         }
 
         // Step 2: Validate auction status
-        if (auction.getStatus() != Auction.AuctionStatus.ACTIVE) {
-            log.warn("Bid rejected - Auction not active: {}", auction.getAuctionId());
+        if (auction.getStatus() != Auction.AuctionStatus.ACTIVE &&
+            auction.getStatus() != Auction.AuctionStatus.ENDING_SOON) {
+            log.warn("Bid rejected - Auction not active or ending soon: {}", auction.getAuctionId());
             return BidResponse.failure("Auction is not active");
         }
 
