@@ -31,7 +31,12 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     /**
      * Find transaction for a specific auction
      */
-    Optional<Transaction> findByAuction(Auction auction);
+    Transaction findByAuction(Auction auction);
+
+    /**
+     * Find all transactions by buyer or seller
+     */
+    List<Transaction> findByBuyerOrSeller(User buyer, User seller);
 
     /**
      * Find transactions by status

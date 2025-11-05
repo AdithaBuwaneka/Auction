@@ -159,4 +159,50 @@ public class BidService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return bidRepository.findByBidderOrderByBidTimeDesc(user);
     }
+
+    /**
+     * Retract a bid (within 1 minute window)
+     */
+    @Transactional
+    public void retractBid(Long bidId) {
+        Bid bid = bidRepository.findById(bidId)
+                .orElseThrow(() -> new RuntimeException("Bid not found"));
+
+        // Check if bid is within 1 minute window
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime bidTime = bid.getBidTime();
+        long minutesElapsed = java.time.Duration.between(bidTime, now).toMinutes();
+
+        if (minutesElapsed > 1) {
+            throw new IllegalStateException("Cannot retract bid after 1 minute");
+        }
+
+        // Check if this is the winning bid
+        if (bid.getStatus() == Bid.BidStatus.WINNING) {
+            // Find previous bid and make it winning
+            List<Bid> previousBids = bidRepository.findByAuctionOrderByBidAmountDesc(bid.getAuction());
+            Bid previousWinningBid = null;
+            for (Bid prevBid : previousBids) {
+                if (!prevBid.getBidId().equals(bidId) && prevBid.getStatus() == Bid.BidStatus.OUTBID) {
+                    previousWinningBid = prevBid;
+                    break;
+                }
+            }
+
+            // Update auction price to previous bid
+            Auction auction = bid.getAuction();
+            if (previousWinningBid != null) {
+                previousWinningBid.setStatus(Bid.BidStatus.WINNING);
+                bidRepository.save(previousWinningBid);
+                auction.setCurrentPrice(previousWinningBid.getBidAmount());
+            } else {
+                auction.setCurrentPrice(auction.getStartingPrice());
+            }
+            auctionRepository.save(auction);
+        }
+
+        // Delete the bid
+        bidRepository.delete(bid);
+        log.info("Bid retracted - ID: {}", bidId);
+    }
 }

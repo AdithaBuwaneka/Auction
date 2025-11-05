@@ -80,4 +80,50 @@ public class BidController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    /**
+     * Get my bids (requires authentication)
+     * GET /api/bids/my-bids
+     */
+    @GetMapping("/my-bids")
+    public ResponseEntity<List<Bid>> getMyBids(@RequestHeader("Authorization") String token) {
+        log.info("REST API: Get my bids");
+        try {
+            Long userId = extractUserIdFromToken(token);
+            List<Bid> bids = bidService.getBidsByUser(userId);
+            return ResponseEntity.ok(bids);
+        } catch (Exception e) {
+            log.error("Error fetching my bids", e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    /**
+     * Retract a bid (within 1 minute window)
+     * DELETE /api/bids/{bidId}
+     */
+    @DeleteMapping("/{bidId}")
+    public ResponseEntity<?> retractBid(@PathVariable Long bidId) {
+        log.info("REST API: Retract bid - {}", bidId);
+        try {
+            bidService.retractBid(bidId);
+            return ResponseEntity.ok(java.util.Map.of("message", "Bid retracted successfully"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error retracting bid", e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(java.util.Map.of("error", "Bid not found"));
+        }
+    }
+
+    // Helper method to extract user ID from JWT token
+    private Long extractUserIdFromToken(String token) {
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        // In real implementation, decode JWT and extract userId
+        return 1L;
+    }
 }

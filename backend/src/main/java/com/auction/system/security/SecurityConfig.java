@@ -46,6 +46,7 @@ public class SecurityConfig {
                                 "/api/auctions/**",
                                 "/api/bids/**",
                                 "/api/users/**",
+                                "/api/transactions/**",
                                 "/api/migrate/**",
                                 "/ws/**",
                                 "/error"

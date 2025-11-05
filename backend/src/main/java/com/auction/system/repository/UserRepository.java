@@ -39,4 +39,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.isActive = true")
     java.util.List<User> findAllActiveUsers();
+
+    /**
+     * Find users by active status
+     */
+    java.util.List<User> findByIsActive(Boolean isActive);
 }
