@@ -50,6 +50,8 @@ public class SecurityConfig {
                                 "/api/notifications/**",
                                 "/api/wallet/**",
                                 "/api/migrate/**",
+                                "/api/upload/**",
+                                "/uploads/**",
                                 "/ws/**",
                                 "/error"
                         ).permitAll()
