@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Auction System - IN3111 Assignment 2</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            background: #f5f7fa;
+            border-bottom: 3px solid #667eea;
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 20px 30px;
+            background: #f5f7fa;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -3px;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: #e8ecf1;
+            color: #667eea;
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-button.member-tab {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+        }
+
+        .tab-button.member-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom: 3px solid #764ba2;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            padding: 40px;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .subsection {
+            margin-bottom: 30px;
+        }
+
+        .subsection-title {
+            font-size: 1.5em;
+            color: #764ba2;
+            margin-bottom: 15px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .member-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: relative;
+        }
+
+        .member-number {
+            font-size: 4em;
+            font-weight: bold;
+            opacity: 0.2;
+            position: absolute;
+            right: 20px;
+            top: 10px;
+        }
+
+        .member-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .member-role {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+
+        .concept-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 5px;
+            font-size: 0.9em;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .tech-item {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        .diagram-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .warning-box {
+            background: #f8d7da;
+            border-left: 5px solid #dc3545;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f5f7fa;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            margin: 30px 0;
+        }
+
+        .timeline:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #667eea;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 30px;
+        }
+
+        .timeline-item:before {
+            content: '';
+            position: absolute;
+            left: -36px;
+            top: 5px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #667eea;
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px #667eea;
+        }
+
+        .timeline-content {
+            background: #f5f7fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .timeline-title {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .highlight {
+            background: #fff9c4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab-content {
+                padding: 20px;
+            }
+
+            .tab-button {
+                padding: 15px 20px;
+                font-size: 0.9em;
+            }
+        }
+
+        .mermaid {
+            text-align: center;
+        }
+
+        .member-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .member-header h2 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .member-header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏆 Real-Time Auction System</h1>
+            <p>IN3111 - Network Programming - Assignment 2</p>
+            <p>University of Moratuwa</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="openTab(event, 'common')">
+                📋 Common Information
+            </button>
+            <button class="tab-button member-tab" onclick="openTab(event, 'member1')">
+                👤 Member 1: TCP Sockets
+            </button>
+            <button class="tab-button member-tab" onclick="openTab(event, 'member2')">
+                👤 Member 2: Multithreading
+            </button>
+            <button class="tab-button member-tab" onclick="openTab(event, 'member3')">
+                👤 Member 3: Multicasting
+            </button>
+            <button class="tab-button member-tab" onclick="openTab(event, 'member4')">
+                👤 Member 4: NIO
+            </button>
+            <button class="tab-button member-tab" onclick="openTab(event, 'member5')">
+                👤 Member 5: SSL/TLS
+            </button>
+        </div>
+
+        <!-- Common Information Tab -->
+        <div id="common" class="tab-content active">
+            
+            <!-- Project Overview -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">📋</span>
+                    Project Overview
+                </h2>
+                <div class="success-box">
+                    <h3>Project Title: Real-Time Auction System with Secure Bidding</h3>
+                    <p><strong>Objective:</strong> Develop a web-based auction platform that demonstrates advanced network programming concepts including TCP/IP communication, multithreading, multicasting, NIO, and secure SSL/TLS connections.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Key Features</h3>
+                    <ul class="feature-list">
+                        <li>Real-time bidding with dynamic countdown timer</li>
+                        <li>Multiple concurrent users and auctions</li>
+                        <li>Live price update broadcasts to all participants</li>
+                        <li>High-performance handling of 100+ concurrent connections</li>
+                        <li>Secure encrypted communication for sensitive transactions</li>
+                        <li>Flexible auction rules set by sellers (start time, end time, bid gap)</li>
+                        <li>Automatic auction closure based on bidding activity</li>
+                        <li>User authentication and authorization</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Technology Stack -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">💻</span>
+                    Technology Stack
+                </h2>
+                <div class="tech-stack">
+                    <div class="tech-item">Next.js (Frontend)</div>
+                    <div class="tech-item">Spring Boot (Backend)</div>
+                    <div class="tech-item">Java Network Programming</div>
+                    <div class="tech-item">PostgreSQL (Neon Cloud)</div>
+                    <div class="tech-item">WebSocket</div>
+                    <div class="tech-item">SSL/TLS</div>
+                </div>
+
+                <div class="info-box" style="margin-top: 20px;">
+                    <strong>Why This Stack?</strong>
+                    <ul style="margin-top: 10px; margin-left: 20px;">
+                        <li><strong>Next.js:</strong> Modern React framework for responsive UI with real-time updates</li>
+                        <li><strong>Spring Boot:</strong> Robust Java framework that integrates seamlessly with Java network programming</li>
+                        <li><strong>PostgreSQL (Neon):</strong> Scalable cloud database for reliable data persistence</li>
+                        <li><strong>Java Networking:</strong> Direct implementation of TCP, UDP, NIO, and SSL concepts from IN3111</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- System Architecture -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">🏗️</span>
+                    System Architecture
+                </h2>
+
+                <div class="diagram-container">
+                    <h3 style="text-align: center; margin-bottom: 20px;">High-Level System Architecture</h3>
+                    <div class="mermaid">
+graph TB
+    subgraph Client["Client Layer (Next.js)"]
+        UI[Web Browser UI]
+        WS[WebSocket Client]
+    end
+
+    subgraph Server["Application Server (Spring Boot)"]
+        API[REST API Layer]
+        TCP[TCP Bidding Service<br/>Member 1]
+        MT[Multithreading Handler<br/>Member 2]
+        MC[Multicast Service<br/>Member 3]
+        NIO[NIO Selector<br/>Member 4]
+        SSL[SSL/TLS Security<br/>Member 5]
+    end
+
+    subgraph Network["Network Layer"]
+        TCPConn[TCP Connection]
+        UDPMulti[UDP Multicast]
+        SecureConn[SSL/TLS Connection]
+    end
+
+    subgraph Database["Database Layer"]
+        DB[(PostgreSQL<br/>Neon Cloud)]
+    end
+
+    UI -->|HTTP/WebSocket| API
+    WS -->|Real-time Updates| MC
+    
+    API --> TCP
+    API --> MT
+    API --> SSL
+    
+    TCP -->|Bidding| TCPConn
+    MT -->|Thread Pool| TCPConn
+    MC -->|Broadcast| UDPMulti
+    NIO -->|Non-blocking I/O| TCPConn
+    SSL -->|Encryption| SecureConn
+    
+    TCP --> DB
+    MT --> DB
+    SSL --> DB
+    
+    style Client fill:#e1f5ff
+    style Server fill:#fff3e0
+    style Network fill:#f3e5f5
+    style Database fill:#e8f5e9
+                    </div>
+                </div>
+
+                <div class="diagram-container">
+                    <h3 style="text-align: center; margin-bottom: 20px;">Network Programming Flow</h3>
+                    <div class="mermaid">
+sequenceDiagram
+    participant Client
+    participant TCPServer
+    participant ThreadPool
+    participant MulticastSvc
+    participant NIOSelector
+    participant SSLServer
+    participant Database
+
+    Client->>TCPServer: 1. Connect (TCP Socket)
+    TCPServer->>ThreadPool: 2. Assign Thread
+    ThreadPool->>Database: 3. Authenticate User
+    Database-->>ThreadPool: 4. User Validated
+    
+    Client->>TCPServer: 5. Place Bid
+    TCPServer->>NIOSelector: 6. Handle via NIO
+    NIOSelector->>Database: 7. Save Bid
+    
+    NIOSelector->>MulticastSvc: 8. Trigger Broadcast
+    MulticastSvc-->>Client: 9. UDP Multicast Update
+    MulticastSvc-->>Client: (All Subscribers Notified)
+    
+    Client->>SSLServer: 10. Secure Payment (SSL/TLS)
+    SSLServer->>Database: 11. Process Payment
+    Database-->>SSLServer: 12. Payment Success
+    SSLServer-->>Client: 13. Encrypted Response
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Schema -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">🗄️</span>
+                    Database Schema
+                </h2>
+
+                <div class="diagram-container">
+                    <h3 style="text-align: center; margin-bottom: 20px;">Entity Relationship Diagram</h3>
+                    <div class="mermaid">
+erDiagram
+    USERS ||--o{ AUCTIONS : creates
+    USERS ||--o{ BIDS : places
+    AUCTIONS ||--o{ BIDS : receives
+    USERS ||--o{ TRANSACTIONS : makes
+
+    USERS {
+        int user_id PK
+        string username
+        string email
+        string password_hash
+        decimal balance
+        timestamp created_at
+        boolean is_active
+    }
+
+    AUCTIONS {
+        int auction_id PK
+        int seller_id FK
+        string item_name
+        text description
+        string image_url
+        decimal starting_price
+        decimal current_price
+        timestamp start_time
+        timestamp mandatory_end_time
+        interval bid_gap_duration
+        timestamp current_deadline
+        string status
+        int winner_id FK
+        timestamp created_at
+    }
+
+    BIDS {
+        int bid_id PK
+        int auction_id FK
+        int bidder_id FK
+        decimal bid_amount
+        timestamp bid_time
+        string status
+    }
+
+    TRANSACTIONS {
+        int transaction_id PK
+        int buyer_id FK
+        int seller_id FK
+        int auction_id FK
+        decimal amount
+        string payment_method
+        string status
+        timestamp transaction_time
+    }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auction Logic -->
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">⏱️</span>
+                    Auction Logic & Timing Mechanism
+                </h2>
+
+                <div class="info-box">
+                    <h3>Auction Rules</h3>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>Seller Configuration:</strong> Sets START time, END time (mandatory), and BID GAP</li>
+                        <li><strong>Bid Gap:</strong> Time window after each bid for next bid to be placed</li>
+                        <li><strong>Mandatory End:</strong> Auction MUST end by this time regardless of bid activity</li>
+                        <li><strong>Early Closure:</strong> If no bid within BID GAP, auction ends automatically</li>
+                        <li><strong>Deadline Extension:</strong> Each new bid extends deadline by BID GAP (up to mandatory end)</li>
+                    </ul>
+                </div>
+
+                <div class="diagram-container">
+                    <h3 style="text-align: center; margin-bottom: 20px;">Auction Timing Logic</h3>
+                    <div class="mermaid">
+graph TD
+    Start[Auction Starts<br/>8:00 AM] --> Config[Seller Sets:<br/>END: 8:00 PM<br/>BID GAP: 5 hours]
+    Config --> FirstBid{First Bid Placed?}
+    
+    FirstBid -->|Yes 8:30 AM| CalcDeadline[Calculate Deadline:<br/>8:30 AM + 5h = 1:30 PM]
+    FirstBid -->|No bids at all| NoActivity[Auction Ends at<br/>Mandatory END: 8:00 PM]
+    
+    CalcDeadline --> CheckLimit{Deadline > <br/>Mandatory END?}
+    CheckLimit -->|Yes| UseMandatory[Use Mandatory END<br/>8:00 PM]
+    CheckLimit -->|No| UseCalculated[Use Calculated<br/>1:30 PM]
+    
+    UseCalculated --> WaitBid[Wait for Next Bid<br/>Until 1:30 PM]
+    UseMandatory --> WaitBid2[Wait for Next Bid<br/>Until 8:00 PM]
+    
+    WaitBid --> NewBid{New Bid Before<br/>Deadline?}
+    WaitBid2 --> NewBid2{New Bid Before<br/>Deadline?}
+    
+    NewBid -->|Yes| CalcDeadline
+    NewBid -->|No| AuctionEnd[Auction Ends<br/>Previous Bidder Wins]
+    
+    NewBid2 -->|Yes| CalcDeadline
+    NewBid2 -->|No| AuctionEnd
+    
+    UseMandatory --> MandatoryReached{Mandatory END<br/>Reached?}
+    MandatoryReached -->|Yes| AuctionEnd
+    
+    style Start fill:#a8e6cf
+    style AuctionEnd fill:#ff8b94
+    style NewBid fill:#ffd3b6
+    style NewBid2 fill:#ffd3b6
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- Member 1 Tab: TCP Sockets -->
+        <div id="member1" class="tab-content">
+            <div class="member-header">
+                <h2>👤 Member 1</h2>
+                <p>TCP Socket Communication Specialist</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">🔌</span>
+                    TCP Bidding System Implementation
+                </h2>
+
+                <div class="success-box">
+                    <h3>Your Core Responsibility</h3>
+                    <p>Implement the foundational TCP socket-based bidding system that enables reliable client-server communication for auction bid placement and validation.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Network Concept: TCP Sockets</h3>
+                    <div class="card">
+                        <h4 style="color: #667eea; margin-bottom: 15px;">What You'll Implement</h4>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>ServerSocket:</strong> Create a listening server on port 8080</li>
+                            <li><strong>Socket:</strong> Accept client connections</li>
+                            <li><strong>InputStream/OutputStream:</strong> Read bid requests and send responses</li>
+                            <li><strong>Connection Management:</strong> Handle connection lifecycle</li>
+                            <li><strong>Data Serialization:</strong> Convert bid objects to/from byte streams</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Your Specific Tasks</h3>
+                    <div class="card-grid">
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 1: Server Implementation</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Create ServerSocket on port 8080</li>
+                                <li>Accept incoming client connections</li>
+                                <li>Handle connection timeouts (30 seconds)</li>
+                                <li>Log all connection attempts</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 2: Bid Validation</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Verify auction is active</li>
+                                <li>Check bid amount > current price</li>
+                                <li>Validate bidder authentication</li>
+                                <li>Check if bid is within deadline</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 3: Request/Response Protocol</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Define message format (JSON/Plain text)</li>
+                                <li>Implement error codes</li>
+                                <li>Send acknowledgments</li>
+                                <li>Handle malformed requests</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 4: Database Integration</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Save accepted bids to PostgreSQL</li>
+                                <li>Update auction current_price</li>
+                                <li>Update auction current_deadline</li>
+                                <li>Record bid timestamp</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Wireshark Demonstration</h3>
+                    <div class="warning-box">
+                        <h4>📡 What to Show in Presentation</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>TCP Handshake:</strong> Capture SYN, SYN-ACK, ACK packets</li>
+                            <li><strong>Bid Request:</strong> Show PSH packet with bid data</li>
+                            <li><strong>Server Response:</strong> Show ACK packet with response</li>
+                            <li><strong>Connection Termination:</strong> FIN, FIN-ACK packets</li>
+                            <li><strong>Port Information:</strong> Highlight source/destination ports</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>Filter:</strong> <span class="highlight">tcp.port == 8080</span></p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Testing Scenarios</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Test Case</th>
+                                    <th>Input</th>
+                                    <th>Expected Output</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Valid Bid</td>
+                                    <td>auction_id: 1, amount: 5000</td>
+                                    <td>BID_ACCEPTED</td>
+                                </tr>
+                                <tr>
+                                    <td>Low Bid Amount</td>
+                                    <td>amount: 100 (current: 5000)</td>
+                                    <td>BID_REJECTED: Amount too low</td>
+                                </tr>
+                                <tr>
+                                    <td>Auction Ended</td>
+                                    <td>auction_id: 999 (closed)</td>
+                                    <td>BID_REJECTED: Auction ended</td>
+                                </tr>
+                                <tr>
+                                    <td>Invalid Format</td>
+                                    <td>Malformed JSON</td>
+                                    <td>ERROR: Invalid request format</td>
+                                </tr>
+                                <tr>
+                                    <td>Connection Timeout</td>
+                                    <td>No data sent for 30s</td>
+                                    <td>Connection closed</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Presentation Script (3 minutes)</h3>
+                    <div class="success-box">
+                        <h4>Your Presentation Flow</h4>
+                        <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                            <li><strong>(30 sec)</strong> Explain TCP concept: "TCP provides reliable, ordered, connection-oriented communication"</li>
+                            <li><strong>(45 sec)</strong> Show code: ServerSocket creation and client acceptance</li>
+                            <li><strong>(60 sec)</strong> Live demo: Place bid from client, show server receiving and validating</li>
+                            <li><strong>(45 sec)</strong> Wireshark: Show TCP handshake, bid request packet, server response</li>
+                        </ol>
+                        <p style="margin-top: 15px;"><strong>Key Point to Emphasize:</strong> "TCP ensures our bids are delivered reliably and in order, which is critical for financial transactions in an auction system."</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Member 2 Tab: Multithreading -->
+        <div id="member2" class="tab-content">
+            <div class="member-header">
+                <h2>👤 Member 2</h2>
+                <p>Multithreading & Concurrency Expert</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">⚙️</span>
+                    Multithreaded Client Handler Implementation
+                </h2>
+
+                <div class="success-box">
+                    <h3>Your Core Responsibility</h3>
+                    <p>Implement a thread pool-based architecture to handle multiple concurrent users, prevent race conditions, and ensure thread-safe operations across the auction system.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Network Concept: Multithreading</h3>
+                    <div class="card">
+                        <h4 style="color: #667eea; margin-bottom: 15px;">What You'll Implement</h4>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>ExecutorService:</strong> Create fixed thread pool (50 threads)</li>
+                            <li><strong>Thread Pool Management:</strong> Configure queue capacity and rejection policy</li>
+                            <li><strong>Synchronized Blocks:</strong> Protect critical sections (bid validation)</li>
+                            <li><strong>Concurrent Collections:</strong> Use ConcurrentHashMap for shared data</li>
+                            <li><strong>Thread Monitoring:</strong> Track active threads and performance</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Your Specific Tasks</h3>
+                    <div class="card-grid">
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 1: Thread Pool Setup</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Create ExecutorService with 50 threads</li>
+                                <li>Configure queue capacity (100 tasks)</li>
+                                <li>Implement rejection policy</li>
+                                <li>Add thread naming for debugging</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 2: Race Condition Prevention</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Identify critical sections</li>
+                                <li>Add synchronized blocks</li>
+                                <li>Use AtomicInteger for counters</li>
+                                <li>Implement pessimistic locking in DB</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 3: Concurrent Data Structures</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Use ConcurrentHashMap for auctions</li>
+                                <li>Use CopyOnWriteArrayList for subscribers</li>
+                                <li>Use BlockingQueue for task queue</li>
+                                <li>Avoid Collections.synchronizedMap()</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 4: Thread Monitoring</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Log active thread count</li>
+                                <li>Track completed tasks</li>
+                                <li>Monitor queue size</li>
+                                <li>Alert on thread pool saturation</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Race Condition Prevention</h3>
+                    <div class="warning-box">
+                        <h4>⚠️ The Problem</h4>
+                        <p>Without proper synchronization, two users could bid at the same time and the lower bid could win because both threads read the same current price before either updates it.</p>
+                    </div>
+
+                    <div class="success-box">
+                        <h4>✅ The Solution</h4>
+                        <p>Use synchronized blocks to ensure only one thread can validate and place a bid at a time. This guarantees the highest bid always wins.</p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Demonstration Setup</h3>
+                    <div class="warning-box">
+                        <h4>📊 What to Show in Presentation</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>Console Output:</strong> Show thread names and IDs handling different clients</li>
+                            <li><strong>Multiple Browser Windows:</strong> Open 5-10 windows simultaneously placing bids</li>
+                            <li><strong>Thread Pool Metrics:</strong> Display active threads, queue size, completed tasks</li>
+                            <li><strong>Race Condition Test:</strong> Show what happens WITHOUT synchronization (optional)</li>
+                            <li><strong>Performance:</strong> Demonstrate handling 50+ concurrent users</li>
+                        </ul>
+                    </div>
+                </div>
+
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Testing Scenarios</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Test Case</th>
+                                    <th>Setup</th>
+                                    <th>Expected Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Concurrent Bids</td>
+                                    <td>10 users bid simultaneously on same auction</td>
+                                    <td>Highest bid wins, no data corruption</td>
+                                </tr>
+                                <tr>
+                                    <td>Thread Pool Capacity</td>
+                                    <td>51+ connections arrive at once</td>
+                                    <td>50 handled immediately, rest queued</td>
+                                </tr>
+                                <tr>
+                                    <td>Queue Overflow</td>
+                                    <td>150+ connections when pool is full</td>
+                                    <td>CallerRunsPolicy: Main thread helps</td>
+                                </tr>
+                                <tr>
+                                    <td>Thread Reuse</td>
+                                    <td>100 sequential connections</td>
+                                    <td>Same 50 threads reused efficiently</td>
+                                </tr>
+                                <tr>
+                                    <td>Deadlock Prevention</td>
+                                    <td>Multiple locks needed</td>
+                                    <td>Always acquire locks in same order</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Presentation Script (3 minutes)</h3>
+                    <div class="success-box">
+                        <h4>Your Presentation Flow</h4>
+                        <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                            <li><strong>(30 sec)</strong> Explain concept: "Multithreading allows our server to handle many users simultaneously without blocking"</li>
+                            <li><strong>(45 sec)</strong> Show code: ExecutorService setup and synchronized blocks</li>
+                            <li><strong>(60 sec)</strong> Live demo: Open 10 browser windows, place bids simultaneously, show console with thread IDs</li>
+                            <li><strong>(45 sec)</strong> Show metrics: Active threads, completed tasks, how race conditions are prevented</li>
+                        </ol>
+                        <p style="margin-top: 15px;"><strong>Key Point to Emphasize:</strong> "Without proper synchronization, two users could bid at the same time and the lower bid could win. Our synchronized blocks ensure data integrity."</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Member 3 Tab: Multicasting -->
+        <div id="member3" class="tab-content">
+            <div class="member-header">
+                <h2>👤 Member 3</h2>
+                <p>Multicast Broadcasting Specialist</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">📡</span>
+                    Multicast Price Update System
+                </h2>
+
+                <div class="success-box">
+                    <h3>Your Core Responsibility</h3>
+                    <p>Implement UDP multicast broadcasting to send real-time price updates and auction notifications to all subscribed users simultaneously.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Network Concept: Multicasting (UDP)</h3>
+                    <div class="card">
+                        <h4 style="color: #667eea; margin-bottom: 15px;">What You'll Implement</h4>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>MulticastSocket:</strong> Create sender and receiver sockets</li>
+                            <li><strong>Multicast Groups:</strong> Use IP range 224.0.0.0 to 239.255.255.255</li>
+                            <li><strong>Group Management:</strong> Join/leave multicast groups</li>
+                            <li><strong>DatagramPacket:</strong> Create and send UDP packets</li>
+                            <li><strong>Broadcasting:</strong> Send updates to all group members</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Your Specific Tasks</h3>
+                    <div class="card-grid">
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 1: Multicast Sender</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Create DatagramSocket on server</li>
+                                <li>Define multicast group (230.0.0.1)</li>
+                                <li>Broadcast price updates when bids placed</li>
+                                <li>Send auction status changes</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 2: Multicast Receiver</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Create MulticastSocket on client</li>
+                                <li>Join multicast group</li>
+                                <li>Listen for incoming packets</li>
+                                <li>Parse and display updates</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 3: Message Protocol</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Design message format</li>
+                                <li>Types: PRICE_UPDATE, STATUS_CHANGE</li>
+                                <li>Include auction ID, data, timestamp</li>
+                                <li>Keep messages under 512 bytes</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 4: Group Management</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>One group per active auction</li>
+                                <li>Clients join when viewing auction</li>
+                                <li>Clients leave when navigating away</li>
+                                <li>Handle multiple group subscriptions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Message Protocol</h3>
+                    <div class="info-box">
+                        <h4>Message Types</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>PRICE_UPDATE:</strong> Broadcast when new bid is placed</li>
+                            <li><strong>STATUS_CHANGE:</strong> Notify auction status (ENDING_SOON, ENDED, WON)</li>
+                            <li><strong>NEW_AUCTION:</strong> Announce new auction started</li>
+                        </ul>
+                        <p style="margin-top: 15px;">Messages include: Auction ID, data, and timestamp</p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Wireshark Demonstration</h3>
+                    <div class="warning-box">
+                        <h4>📡 What to Show in Presentation</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>Multicast Packets:</strong> Capture UDP packets to 230.0.0.1</li>
+                            <li><strong>Destination Address:</strong> Highlight multicast IP (Class D)</li>
+                            <li><strong>Multiple Receivers:</strong> Show same packet delivered to multiple clients</li>
+                            <li><strong>No Handshake:</strong> Explain UDP has no connection setup</li>
+                            <li><strong>Port Number:</strong> Show destination port 4446</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>Filter:</strong> <span class="highlight">udp.port == 4446 || ip.dst == 230.0.0.1</span></p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Multicast vs Unicast vs Broadcast</h3>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Destination</th>
+                                    <th>Efficiency</th>
+                                    <th>Use Case</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Unicast</strong></td>
+                                    <td>One specific device</td>
+                                    <td>❌ Low (n messages)</td>
+                                    <td>TCP bidding</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Broadcast</strong></td>
+                                    <td>ALL devices</td>
+                                    <td>⚠️ Wasteful</td>
+                                    <td>ARP requests</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Multicast</strong></td>
+                                    <td>Subscribed group</td>
+                                    <td>✅ High (1 message)</td>
+                                    <td>Auction updates</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Testing Scenarios</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Test Case</th>
+                                    <th>Setup</th>
+                                    <th>Expected Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Multiple Subscribers</td>
+                                    <td>5 clients join same multicast group</td>
+                                    <td>All 5 receive same price update</td>
+                                </tr>
+                                <tr>
+                                    <td>Late Joiner</td>
+                                    <td>Client joins after 5 updates sent</td>
+                                    <td>Receives only NEW updates (UDP = no history)</td>
+                                </tr>
+                                <tr>
+                                    <td>Leave Group</td>
+                                    <td>Client calls leaveGroup()</td>
+                                    <td>No longer receives updates</td>
+                                </tr>
+                                <tr>
+                                    <td>Packet Loss</td>
+                                    <td>Network congestion simulated</td>
+                                    <td>Some updates may be lost (UDP = unreliable)</td>
+                                </tr>
+                                <tr>
+                                    <td>Multiple Auctions</td>
+                                    <td>Client joins 3 different groups</td>
+                                    <td>Receives updates from all 3 auctions</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Presentation Script (3 minutes)</h3>
+                    <div class="success-box">
+                        <h4>Your Presentation Flow</h4>
+                        <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                            <li><strong>(30 sec)</strong> Explain concept: "Multicast sends one message that reaches many subscribers - very efficient for broadcasting updates"</li>
+                            <li><strong>(45 sec)</strong> Show code: MulticastSocket setup, join/leave group, send/receive</li>
+                            <li><strong>(60 sec)</strong> Live demo: Open 5 browser windows, place bid on one, show all 5 receive price update simultaneously</li>
+                            <li><strong>(45 sec)</strong> Wireshark: Show UDP multicast packet with destination 230.0.0.1, explain no TCP handshake needed</li>
+                        </ol>
+                        <p style="margin-top: 15px;"><strong>Key Point to Emphasize:</strong> "Instead of sending 100 separate messages to 100 users (unicast), we send ONE multicast message that all subscribers receive - much more efficient!"</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Member 4 Tab: NIO -->
+        <div id="member4" class="tab-content">
+            <div class="member-header">
+                <h2>👤 Member 4</h2>
+                <p>NIO Performance Engineer</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">⚡</span>
+                    NIO Scalability Implementation
+                </h2>
+
+                <div class="success-box">
+                    <h3>Your Core Responsibility</h3>
+                    <p>Implement Non-blocking I/O (NIO) using Selector to handle 100+ concurrent connections efficiently with minimal threads, improving server scalability and performance.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Network Concept: NIO (Non-blocking I/O)</h3>
+                    <div class="card">
+                        <h4 style="color: #667eea; margin-bottom: 15px;">What You'll Implement</h4>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>Selector:</strong> Monitor multiple channels with single thread</li>
+                            <li><strong>SocketChannel:</strong> Non-blocking alternative to Socket</li>
+                            <li><strong>ServerSocketChannel:</strong> Non-blocking alternative to ServerSocket</li>
+                            <li><strong>ByteBuffer:</strong> Efficient data transfer buffer</li>
+                            <li><strong>SelectionKey:</strong> Track channel events (READ, WRITE, ACCEPT)</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Traditional I/O vs NIO</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Aspect</th>
+                                    <th>Traditional Blocking I/O</th>
+                                    <th>Your NIO Implementation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Threading Model</strong></td>
+                                    <td>One thread per connection</td>
+                                    <td>One thread handles many connections</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Blocking Behavior</strong></td>
+                                    <td>Thread blocks waiting for I/O</td>
+                                    <td>Thread never blocks, checks readiness</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Scalability</strong></td>
+                                    <td>Limited by thread count (~1000)</td>
+                                    <td>Can handle 10,000+ connections</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Resource Usage</strong></td>
+                                    <td>High (1 thread = ~1MB stack)</td>
+                                    <td>Low (1 thread handles many channels)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Complexity</strong></td>
+                                    <td>Simple, straightforward</td>
+                                    <td>More complex, event-driven</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Your Specific Tasks</h3>
+                    <div class="card-grid">
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 1: Selector Setup</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Create and configure Selector</li>
+                                <li>Set up ServerSocketChannel</li>
+                                <li>Configure non-blocking mode</li>
+                                <li>Register ACCEPT interest</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 2: Event Loop</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Implement select() loop</li>
+                                <li>Process ready channels</li>
+                                <li>Handle ACCEPT, READ, WRITE events</li>
+                                <li>Remove processed keys</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 3: Buffer Management</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Allocate ByteBuffers efficiently</li>
+                                <li>Use flip() and clear() correctly</li>
+                                <li>Handle partial reads/writes</li>
+                                <li>Implement buffer pooling</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 4: Performance Monitoring</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Track active channels count</li>
+                                <li>Measure response time</li>
+                                <li>Monitor memory usage</li>
+                                <li>Compare vs blocking I/O</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="subsection">
+                    <h3 class="subsection-title">ByteBuffer Concept</h3>
+                    <div class="info-box">
+                        <h4>ByteBuffer States</h4>
+                        <p><strong>ByteBuffer</strong> is used for efficient data transfer with three key attributes:</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>position:</strong> Next byte to read/write</li>
+                            <li><strong>limit:</strong> First byte that should not be read/written</li>
+                            <li><strong>capacity:</strong> Maximum size of the buffer</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>Key Operations:</strong></p>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>flip():</strong> Switch from write mode to read mode</li>
+                            <li><strong>clear():</strong> Reset for next write operation</li>
+                            <li><strong>remaining():</strong> Get number of bytes available to read</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Performance Comparison</h3>
+                    <div class="warning-box">
+                        <h4>📊 What to Show in Presentation</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>Blocking I/O:</strong> 50 threads for 50 connections = 50MB+ memory</li>
+                            <li><strong>Your NIO:</strong> 1 thread for 100+ connections = ~10MB memory</li>
+                            <li><strong>Load Test:</strong> Use JMeter to create 100+ concurrent connections</li>
+                            <li><strong>Response Time:</strong> Show NIO handles high load without degradation</li>
+                            <li><strong>CPU Usage:</strong> NIO uses less CPU due to no context switching</li>
+                        </ul>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Blocking I/O (50 threads)</th>
+                                    <th>Your NIO (1 thread)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Max Connections</td>
+                                    <td>~1,000</td>
+                                    <td>10,000+</td>
+                                </tr>
+                                <tr>
+                                    <td>Memory Usage</td>
+                                    <td>50MB (1MB per thread)</td>
+                                    <td>5-10MB</td>
+                                </tr>
+                                <tr>
+                                    <td>Context Switches</td>
+                                    <td>High (50 threads)</td>
+                                    <td>Low (1 thread)</td>
+                                </tr>
+                                <tr>
+                                    <td>Response Time (100 users)</td>
+                                    <td>50ms average</td>
+                                    <td>20ms average</td>
+                                </tr>
+                                <tr>
+                                    <td>Throughput</td>
+                                    <td>1,000 requests/sec</td>
+                                    <td>5,000+ requests/sec</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Testing Scenarios</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Test Case</th>
+                                    <th>Setup</th>
+                                    <th>Expected Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>100 Concurrent Connections</td>
+                                    <td>JMeter creates 100 simultaneous connections</td>
+                                    <td>Single thread handles all without blocking</td>
+                                </tr>
+                                <tr>
+                                    <td>Slow Client</td>
+                                    <td>One client reads data very slowly</td>
+                                    <td>Other clients not affected (non-blocking)</td>
+                                </tr>
+                                <tr>
+                                    <td>Idle Connections</td>
+                                    <td>50 connections idle, 50 active</td>
+                                    <td>No wasted threads on idle connections</td>
+                                </tr>
+                                <tr>
+                                    <td>Partial Writes</td>
+                                    <td>Buffer full, can't write all data</td>
+                                    <td>Track remaining data, write later</td>
+                                </tr>
+                                <tr>
+                                    <td>Client Disconnect</td>
+                                    <td>Client closes connection abruptly</td>
+                                    <td>Gracefully handle, cancel key, clean up</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Presentation Script (3 minutes)</h3>
+                    <div class="success-box">
+                        <h4>Your Presentation Flow</h4>
+                        <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                            <li><strong>(30 sec)</strong> Explain concept: "NIO allows one thread to handle many connections by checking which ones are ready instead of waiting"</li>
+                            <li><strong>(45 sec)</strong> Show code: Selector setup, event loop, handling different events</li>
+                            <li><strong>(60 sec)</strong> Live demo: Use JMeter to create 100 connections, show single thread handling all, display performance metrics</li>
+                            <li><strong>(45 sec)</strong> Compare: Show memory usage vs traditional blocking I/O, explain efficiency gains</li>
+                        </ol>
+                        <p style="margin-top: 15px;"><strong>Key Point to Emphasize:</strong> "Traditional blocking I/O needs 100 threads for 100 clients. Our NIO implementation uses just ONE thread to handle 100+ clients efficiently!"</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Member 5 Tab: SSL/TLS -->
+        <div id="member5" class="tab-content">
+            <div class="member-header">
+                <h2>👤 Member 5</h2>
+                <p>Security & SSL/TLS Specialist</p>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">
+                    <span class="icon">🔒</span>
+                    SSL/TLS Secure Communication
+                </h2>
+
+                <div class="success-box">
+                    <h3>Your Core Responsibility</h3>
+                    <p>Implement SSL/TLS encryption for secure communication, protecting sensitive user data like login credentials and payment information using Java's JSSE framework.</p>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Network Concept: SSL/TLS</h3>
+                    <div class="card">
+                        <h4 style="color: #667eea; margin-bottom: 15px;">What You'll Implement</h4>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>SSLServerSocket:</strong> Create secure server socket</li>
+                            <li><strong>SSLSocket:</strong> Create secure client socket</li>
+                            <li><strong>KeyStore:</strong> Manage certificates and private keys</li>
+                            <li><strong>TrustStore:</strong> Manage trusted certificates</li>
+                            <li><strong>SSL Handshake:</strong> Establish secure connection</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">SSL/TLS Overview</h3>
+                    <div class="info-box">
+                        <h4>What SSL/TLS Provides</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>Confidentiality:</strong> Data encrypted, unreadable by eavesdroppers</li>
+                            <li><strong>Integrity:</strong> Data cannot be tampered with in transit</li>
+                            <li><strong>Authentication:</strong> Server identity verified by certificate</li>
+                            <li><strong>Non-repudiation:</strong> Actions cannot be denied</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Implementation Steps</h3>
+                    
+                    <div class="info-box">
+                        <h4>Step 1: Generate SSL Certificate</h4>
+                        <p>Use Java's keytool to generate a self-signed certificate:</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>Create keystore file (.jks)</li>
+                            <li>Generate RSA 2048-bit key pair</li>
+                            <li>Set certificate validity (365 days)</li>
+                            <li>Export certificate for clients</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>Step 2: SSL Server Setup</h4>
+                        <p>Configure secure server using JSSE:</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>Load KeyStore with certificate</li>
+                            <li>Initialize KeyManagerFactory</li>
+                            <li>Create SSLContext with TLS protocol</li>
+                            <li>Create SSLServerSocket on port 8443</li>
+                            <li>Accept secure client connections</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>Step 3: SSL Client Implementation</h4>
+                        <p>Connect securely to server:</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>Create SSLSocketFactory</li>
+                            <li>Trust server certificate (or use truststore)</li>
+                            <li>Establish SSLSocket connection</li>
+                            <li>Send encrypted data</li>
+                            <li>Receive encrypted responses</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Your Specific Tasks</h3>
+                    <div class="card-grid">
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 1: Certificate Generation</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Generate self-signed certificate</li>
+                                <li>Configure RSA 2048-bit key</li>
+                                <li>Set validity period (365 days)</li>
+                                <li>Export certificate for clients</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 2: Secure Server Setup</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Load KeyStore and certificate</li>
+                                <li>Initialize SSLContext</li>
+                                <li>Create SSLServerSocket on port 8443</li>
+                                <li>Accept secure connections</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 3: Secure Client</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Create SSLSocket connection</li>
+                                <li>Trust server certificate</li>
+                                <li>Send encrypted login data</li>
+                                <li>Receive encrypted responses</li>
+                            </ul>
+                        </div>
+
+                        <div class="card">
+                            <h4 style="color: #667eea;">Task 4: Dummy Payment</h4>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>Receive encrypted payment data</li>
+                                <li>Validate format (16-digit card)</li>
+                                <li>Simulate 2-second processing</li>
+                                <li>Return encrypted response</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Dummy Payment Implementation</h3>
+                    <div class="info-box">
+                        <h4>Payment Processing Flow</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>Receive:</strong> Encrypted payment data from client</li>
+                            <li><strong>Validate:</strong> Check card number format (16 digits), CVV (3 digits), amount > 0</li>
+                            <li><strong>Simulate:</strong> Add 2-second delay to mimic processing</li>
+                            <li><strong>Update:</strong> Save transaction to database</li>
+                            <li><strong>Respond:</strong> Send encrypted success/failure message</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>Note:</strong> This is for demonstration only. In production, integrate with real payment APIs like Stripe or PayPal.</p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Wireshark Demonstration</h3>
+                    <div class="warning-box">
+                        <h4>📡 What to Show in Presentation</h4>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>SSL Handshake:</strong> Capture ClientHello, ServerHello, Certificate packets</li>
+                            <li><strong>Encrypted Data:</strong> Show "Application Data" packets - content not readable</li>
+                            <li><strong>Compare:</strong> Show same data in plain TCP (readable) vs SSL (encrypted)</li>
+                            <li><strong>Certificate:</strong> Right-click packet → SSL → Show certificate details</li>
+                            <li><strong>Cipher Suite:</strong> Show negotiated encryption algorithm (e.g., TLS_RSA_WITH_AES_128_CBC_SHA)</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>Filter:</strong> <span class="highlight">tcp.port == 8443 || ssl</span></p>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Security Best Practices</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Practice</th>
+                                    <th>Why Important</th>
+                                    <th>Implementation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Use TLS 1.2+</td>
+                                    <td>Older versions have vulnerabilities</td>
+                                    <td>Disable SSLv3, TLS 1.0, TLS 1.1</td>
+                                </tr>
+                                <tr>
+                                    <td>Strong Cipher Suites</td>
+                                    <td>Weak ciphers can be cracked</td>
+                                    <td>Use AES-256, disable RC4, DES</td>
+                                </tr>
+                                <tr>
+                                    <td>2048-bit RSA Keys</td>
+                                    <td>1024-bit considered weak</td>
+                                    <td>Use -keysize 2048 in keytool</td>
+                                </tr>
+                                <tr>
+                                    <td>Certificate Validation</td>
+                                    <td>Prevent MITM attacks</td>
+                                    <td>Verify certificate chain in production</td>
+                                </tr>
+                                <tr>
+                                    <td>Secure Password Storage</td>
+                                    <td>Keystore password protection</td>
+                                    <td>Use strong passwords, never hardcode</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Testing Scenarios</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Test Case</th>
+                                    <th>Setup</th>
+                                    <th>Expected Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Secure Login</td>
+                                    <td>Send username/password over SSL</td>
+                                    <td>Wireshark shows encrypted data</td>
+                                </tr>
+                                <tr>
+                                    <td>Invalid Certificate</td>
+                                    <td>Client doesn't trust server cert</td>
+                                    <td>Connection refused (unless trust all)</td>
+                                </tr>
+                                <tr>
+                                    <td>Dummy Payment</td>
+                                    <td>Send card: 1234567890123456, CVV: 123</td>
+                                    <td>Format validated, success returned</td>
+                                </tr>
+                                <tr>
+                                    <td>Invalid Payment Data</td>
+                                    <td>Send card: 123 (too short)</td>
+                                    <td>Validation fails, error returned</td>
+                                </tr>
+                                <tr>
+                                    <td>Man-in-Middle Attack</td>
+                                    <td>Intercept traffic with Wireshark</td>
+                                    <td>Cannot decrypt without private key</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3 class="subsection-title">Presentation Script (3 minutes)</h3>
+                    <div class="success-box">
+                        <h4>Your Presentation Flow</h4>
+                        <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                            <li><strong>(30 sec)</strong> Explain concept: "SSL/TLS encrypts data in transit, protecting sensitive information from eavesdroppers"</li>
+                            <li><strong>(30 sec)</strong> Show certificate: Display keystore, explain public/private key concept</li>
+                            <li><strong>(60 sec)</strong> Live demo: Login with credentials, show payment flow, demonstrate data is encrypted</li>
+                            <li><strong>(60 sec)</strong> Wireshark: Show SSL handshake packets, demonstrate encrypted application data cannot be read, compare with unencrypted TCP</li>
+                        </ol>
+                        <p style="margin-top: 15px;"><strong>Key Point to Emphasize:</strong> "Without SSL, anyone on the network can see passwords and payment details in plain text. Our SSL implementation ensures all sensitive data is encrypted end-to-end."</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tab switching functionality
+        function openTab(evt, tabName) {
+            // Hide all tab content
+            var tabContent = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContent.length; i++) {
+                tabContent[i].classList.remove("active");
+            }
+
+            // Remove active class from all buttons
+            var tabButtons = document.getElementsByClassName("tab-button");
+            for (var i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+
+            // Show current tab and mark button as active
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+
+            // Re-initialize mermaid for the new tab
+            mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+        }
+
+        // Initialize mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35
+            },
+            gantt: {
+                titleTopMargin: 25,
+                barHeight: 20,
+                barGap: 4,
+                topPadding: 50,
+                leftPadding: 75,
+                gridLineStartPadding: 35,
+                fontSize: 11,
+                numberSectionStyles: 4,
+                axisFormat: '%m-%d'
+            }
+        });
+    </script>
+</body>
+</html>
