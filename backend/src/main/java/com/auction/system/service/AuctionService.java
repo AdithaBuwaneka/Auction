@@ -204,6 +204,15 @@ public class AuctionService {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new RuntimeException("Auction not found"));
 
+        // Find and set the winner (highest bidder)
+        Optional<com.auction.system.entity.Bid> highestBid = bidRepository.findHighestBidForAuction(auction);
+        if (highestBid.isPresent()) {
+            auction.setWinner(highestBid.get().getBidder());
+            log.info("Winner set for auction {}: User {}", auction.getAuctionId(), highestBid.get().getBidder().getUserId());
+        } else {
+            log.info("No bids found for auction {}, no winner set", auction.getAuctionId());
+        }
+
         auction.setStatus(Auction.AuctionStatus.ENDED);
         return auctionRepository.save(auction);
     }
