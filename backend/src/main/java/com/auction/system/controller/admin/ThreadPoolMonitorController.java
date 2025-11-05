@@ -18,13 +18,13 @@ import java.util.*;
  */
 @RestController
 @RequestMapping("/api/admin/threads")
-@RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
 public class ThreadPoolMonitorController {
 
-    @Autowired(required = false)
-    private ThreadPoolTaskExecutor threadPoolTaskExecutor;
+    // Optional: Use system thread monitoring instead of specific ThreadPoolTaskExecutor
+    // to avoid bean conflicts with WebSocket executors
+    private ThreadPoolTaskExecutor threadPoolTaskExecutor = null;
 
     /**
      * Get thread pool status
