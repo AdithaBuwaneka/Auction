@@ -26,18 +26,131 @@ This is the backend for the Real-Time Auction System, demonstrating advanced net
 ```
 backend/
 ├── src/main/java/com/auction/system/
-│   ├── entity/           # Database entities (User, Auction, Bid, Transaction)
-│   ├── repository/       # JPA repositories
-│   ├── service/          # Business logic layer
-│   ├── controller/       # REST API controllers
-│   ├── dto/              # Data Transfer Objects
-│   ├── config/           # Configuration classes
-│   └── network/          # Network programming implementations (TCP, NIO, SSL, Multicast)
+│   │
+│   ├── AuctionSystemApplication.java    # Main Spring Boot application entry point
+│   │
+│   ├── entity/                          # Database entities (JPA)
+│   │   ├── User.java                    # User entity
+│   │   ├── Auction.java                 # Auction entity
+│   │   ├── Bid.java                     # Bid entity
+│   │   ├── Transaction.java             # Transaction entity
+│   │   └── Notification.java            # Notification entity
+│   │
+│   ├── repository/                      # Spring Data JPA repositories
+│   │   ├── UserRepository.java
+│   │   ├── AuctionRepository.java
+│   │   ├── BidRepository.java
+│   │   ├── TransactionRepository.java
+│   │   └── NotificationRepository.java
+│   │
+│   ├── service/                         # Business logic layer
+│   │   ├── UserService.java
+│   │   ├── AuctionService.java
+│   │   ├── BidService.java
+│   │   ├── TransactionService.java
+│   │   ├── NotificationService.java
+│   │   └── WalletService.java
+│   │
+│   ├── controller/                      # REST API controllers
+│   │   ├── AuthController.java          # Authentication endpoints
+│   │   ├── UserController.java          # User management endpoints
+│   │   ├── AuctionController.java       # Auction management endpoints
+│   │   ├── BidController.java           # Bidding endpoints
+│   │   ├── TransactionController.java   # Payment & transaction endpoints
+│   │   ├── NotificationController.java  # Notification endpoints
+│   │   ├── WalletController.java        # Wallet management endpoints
+│   │   ├── FileUploadController.java    # Image upload endpoints
+│   │   ├── MonitorController.java       # System monitoring endpoints
+│   │   └── admin/                       # Admin-only controllers
+│   │       └── AdminController.java
+│   │
+│   ├── dto/                             # Data Transfer Objects
+│   │   ├── BidRequest.java
+│   │   ├── BidResponse.java
+│   │   ├── AuctionCreateRequest.java
+│   │   └── AuthRequest.java
+│   │
+│   ├── security/                        # Spring Security configuration
+│   │   ├── SecurityConfig.java          # Security & CORS configuration
+│   │   ├── JwtAuthenticationFilter.java # JWT authentication filter
+│   │   └── JwtUtil.java                 # JWT token utilities
+│   │
+│   ├── config/                          # Application configuration
+│   │   ├── CorsConfig.java              # CORS configuration
+│   │   ├── DatabaseConfig.java          # Database configuration
+│   │   ├── DataSourceConfig.java        # DataSource configuration
+│   │   └── FileUploadConfig.java        # File upload configuration
+│   │
+│   ├── scheduler/                       # Scheduled tasks
+│   │   └── AuctionScheduler.java        # Auction deadline management (Member 2)
+│   │
+│   ├── websocket/                       # WebSocket real-time communication
+│   │   ├── WebSocketConfig.java         # WebSocket configuration
+│   │   └── AuctionWebSocketHandler.java # Real-time auction updates
+│   │
+│   ├── util/                            # Utility classes
+│   │   └── ThreadPoolMonitor.java       # Thread pool monitoring (Member 2)
+│   │
+│   └── network/                         # Network Programming Implementations
+│       │
+│       ├── tcp/                         # ⭐ MEMBER 1: TCP Socket Communication
+│       │   ├── TCPBidServer.java        # TCP server for bid processing (Port 8081)
+│       │   └── TCPBidClient.java        # TCP client for testing
+│       │
+│       ├── nio/                         # ⭐ MEMBER 4: Non-blocking I/O (NIO)
+│       │   ├── NIOBidServer.java        # NIO server with Selector (Port 8082)
+│       │   └── NIOBidClient.java        # NIO client for testing
+│       │
+│       ├── multicast/                   # ⭐ MEMBER 3: UDP Multicast Broadcasting
+│       │   ├── MulticastBroadcaster.java # Broadcasts auction updates (230.0.0.1:4446)
+│       │   └── MulticastReceiver.java   # Receives multicast messages
+│       │
+│       └── ssl/                         # ⭐ MEMBER 5: SSL/TLS Secure Communication
+│           ├── SSLPaymentServer.java    # Secure payment server (Port 8443)
+│           └── SSLPaymentClient.java    # SSL client for secure payments
+│
 ├── src/main/resources/
-│   ├── application.properties
-│   └── keystore.jks      # SSL certificate (generate this)
-└── pom.xml
+│   ├── application.properties           # Application configuration
+│   └── keystore.p12                     # SSL certificate (Member 5)
+│
+└── pom.xml                              # Maven dependencies
 ```
+
+### Member Responsibilities & Implementation Status
+
+#### ⭐ Member 1: TCP Socket Communication
+**Location:** `src/main/java/com/auction/system/network/tcp/`
+- ✅ `TCPBidServer.java` - Multi-threaded TCP server on port 8081
+- ✅ `TCPBidClient.java` - TCP client for bid submission
+- **Features:** Socket-based bid processing, connection handling, request/response protocol
+
+#### ⭐ Member 2: Multithreading & Concurrency
+**Locations:**
+- `src/main/java/com/auction/system/scheduler/AuctionScheduler.java`
+- `src/main/java/com/auction/system/util/ThreadPoolMonitor.java`
+- `src/main/java/com/auction/system/service/BidService.java` (pessimistic locking)
+- ✅ Thread pool configuration (50 core threads, 100 max)
+- ✅ Scheduled auction deadline checks (every 5 seconds)
+- ✅ Concurrent bid processing with database locking
+- ✅ Thread pool monitoring and statistics
+
+#### ⭐ Member 3: UDP Multicast Broadcasting
+**Location:** `src/main/java/com/auction/system/network/multicast/`
+- ✅ `MulticastBroadcaster.java` - Broadcasts price updates to 230.0.0.1:4446
+- ✅ `MulticastReceiver.java` - Receives multicast messages
+- **Features:** Real-time auction updates to all subscribers, group communication
+
+#### ⭐ Member 4: Non-blocking I/O (NIO)
+**Location:** `src/main/java/com/auction/system/network/nio/`
+- ✅ `NIOBidServer.java` - Selector-based NIO server on port 8082
+- ✅ `NIOBidClient.java` - Non-blocking NIO client
+- **Features:** Single-threaded handling of 100+ concurrent connections, channel-based I/O
+
+#### ⭐ Member 5: SSL/TLS Security
+**Location:** `src/main/java/com/auction/system/network/ssl/`
+- ✅ `SSLPaymentServer.java` - Secure payment processing on port 8443
+- ✅ `SSLPaymentClient.java` - SSL client for secure transactions
+- **Features:** Certificate-based authentication, encrypted communication, secure payment processing
 
 ## Setup Instructions
 
@@ -73,10 +186,37 @@ mvn spring-boot:run
 
 The application will start on:
 - **REST API:** http://localhost:8080
-- **TCP Server:** Port 8081 (to be implemented by Member 1)
-- **NIO Server:** Port 8082 (to be implemented by Member 4)
-- **SSL Server:** Port 8443 (to be implemented by Member 5)
-- **Multicast:** 230.0.0.1:4446 (to be implemented by Member 3)
+- **Swagger UI:** http://localhost:8080/swagger-ui.html
+- **API Docs (JSON):** http://localhost:8080/v3/api-docs
+- **TCP Server:** Port 8081 (Member 1)
+- **NIO Server:** Port 8082 (Member 4)
+- **SSL Server:** Port 8443 (Member 5)
+- **Multicast:** 230.0.0.1:4446 (Member 3)
+
+## API Documentation
+
+### 📚 Interactive API Documentation (Swagger)
+
+This project includes **Swagger UI** for interactive API documentation and testing:
+
+- **Swagger UI (Interactive):** http://localhost:8080/swagger-ui.html
+  - Browse all 62 endpoints
+  - Test APIs directly from browser
+  - View request/response schemas
+  - No authentication needed for public endpoints
+
+- **OpenAPI JSON Spec:** http://localhost:8080/v3/api-docs
+  - Machine-readable API specification
+  - Import into Postman, Insomnia, or other API tools
+
+### Quick Start with Swagger:
+1. Start the backend: `mvn spring-boot:run`
+2. Open browser: http://localhost:8080/swagger-ui.html
+3. Expand any endpoint category to see available operations
+4. Click "Try it out" to test endpoints directly
+5. For protected endpoints, click "Authorize" and enter JWT token
+
+---
 
 ## API Endpoints
 
@@ -479,28 +619,40 @@ All 62 endpoints have been tested and verified working:
 
 ## Network Programming Components
 
-### Member 1: TCP Socket Server
-- Implement TCP server on port 8081
-- Handle bid requests via TCP sockets
-- Integrate with BidService
+See detailed implementation in the **Project Structure** section above. Quick reference:
 
-### Member 2: Multithreading
-- ExecutorService with 50 threads configured
-- Thread-safe bid processing with pessimistic locking
-- Concurrent user handling
+### Member 1: TCP Socket Server (Port 8081)
+- ✅ Implemented in `network/tcp/TCPBidServer.java`
+- Multi-threaded TCP server handling bid requests
+- Socket-based communication with request/response protocol
+- Integrated with BidService for real-time bid processing
 
-### Member 3: UDP Multicast
-- Broadcast price updates to 230.0.0.1:4446
-- Real-time notifications to all auction subscribers
+### Member 2: Multithreading & Concurrency
+- ✅ Implemented across multiple components:
+  - `scheduler/AuctionScheduler.java` - Scheduled tasks (@Scheduled)
+  - `util/ThreadPoolMonitor.java` - Thread pool monitoring
+  - `service/BidService.java` - Pessimistic locking (@Lock)
+- ExecutorService with 50 core threads, 100 max threads
+- Thread-safe bid processing with database-level locking
+- Auction deadline checks every 5 seconds
 
-### Member 4: NIO (Non-blocking I/O)
-- Implement Selector-based server on port 8082
-- Handle 100+ concurrent connections with single thread
+### Member 3: UDP Multicast Broadcasting (230.0.0.1:4446)
+- ✅ Implemented in `network/multicast/`
+- `MulticastBroadcaster.java` - Broadcasts price updates
+- `MulticastReceiver.java` - Receives multicast messages
+- Real-time auction updates to all subscribers using group communication
 
-### Member 5: SSL/TLS
-- Secure communication on port 8443
-- Certificate-based authentication
-- Encrypted payment processing
+### Member 4: NIO - Non-blocking I/O (Port 8082)
+- ✅ Implemented in `network/nio/NIOBidServer.java`
+- Selector-based server with channel I/O
+- Single-threaded handling of 100+ concurrent connections
+- Non-blocking bid processing
+
+### Member 5: SSL/TLS Security (Port 8443)
+- ✅ Implemented in `network/ssl/SSLPaymentServer.java`
+- Secure payment processing with TLS encryption
+- Certificate-based authentication (keystore.p12)
+- Encrypted transaction communication
 
 ## Next Steps
 
