@@ -1,5 +1,6 @@
 package com.auction.system.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,6 +15,7 @@ import java.util.Map;
  * Migration Controller
  * Temporary endpoint to run database migrations
  */
+@Tag(name = "13. Database Migration", description = "Database migration utilities")
 @Slf4j
 @RestController
 @RequestMapping("/api/migrate")

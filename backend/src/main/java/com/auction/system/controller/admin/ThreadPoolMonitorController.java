@@ -1,5 +1,6 @@
 package com.auction.system.controller.admin;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import java.util.*;
  * Admin endpoints for monitoring thread pool activity
  * Member 2's Feature
  */
+@Tag(name = "10. Thread Pool Monitoring (Member 2)", description = "Monitor thread pool statistics and concurrency metrics")
 @RestController
 @RequestMapping("/api/admin/threads")
 @Slf4j

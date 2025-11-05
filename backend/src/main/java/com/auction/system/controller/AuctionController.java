@@ -5,6 +5,8 @@ import com.auction.system.entity.Auction;
 import com.auction.system.entity.User;
 import com.auction.system.repository.UserRepository;
 import com.auction.system.service.AuctionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,7 @@ import java.util.List;
 @RequestMapping("/api/auctions")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "3. Auction Management", description = "Create, view, update, and manage auctions")
 public class AuctionController {
 
     private final AuctionService auctionService;

@@ -2,6 +2,7 @@ package com.auction.system.controller;
 
 import com.auction.system.entity.User;
 import com.auction.system.service.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "2. User Management", description = "User profile and account management")
 public class UserController {
 
     private final UserService userService;

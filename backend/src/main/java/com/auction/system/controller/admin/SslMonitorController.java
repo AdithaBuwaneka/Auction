@@ -1,5 +1,6 @@
 package com.auction.system.controller.admin;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,6 +14,7 @@ import java.util.*;
  * Admin endpoints for monitoring SSL/TLS transactions
  * Member 5's Feature
  */
+@Tag(name = "11. Network Monitoring - SSL (Member 5)", description = "Monitor SSL server connections and statistics (Port 8443)")
 @RestController
 @RequestMapping("/api/admin/ssl")
 @RequiredArgsConstructor

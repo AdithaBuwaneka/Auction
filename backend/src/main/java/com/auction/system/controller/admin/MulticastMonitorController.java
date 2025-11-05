@@ -1,6 +1,7 @@
 package com.auction.system.controller.admin;
 
 import com.auction.system.network.multicast.MulticastBroadcaster;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,6 +14,7 @@ import java.util.*;
  * Admin endpoints for monitoring multicast broadcasts
  * Member 3's Feature
  */
+@Tag(name = "11. Network Monitoring - Multicast (Member 3)", description = "Monitor multicast broadcasting status (230.0.0.1:4446)")
 @RestController
 @RequestMapping("/api/admin/multicast")
 @RequiredArgsConstructor

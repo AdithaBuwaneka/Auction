@@ -1,5 +1,6 @@
 package com.auction.system.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.util.UUID;
  * File Upload Controller
  * Handles image uploads for auctions
  */
+@Tag(name = "8. File Upload", description = "Upload and manage auction images")
 @RestController
 @RequestMapping("/api/upload")
 @Slf4j

@@ -1,5 +1,6 @@
 package com.auction.system.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,7 @@ import java.util.Map;
  * Health Check Controller
  * Simple endpoint to verify the application is running
  */
+@Tag(name = "12. Health & Monitoring", description = "System health checks and status")
 @RestController
 @RequestMapping("/api")
 public class HealthController {
