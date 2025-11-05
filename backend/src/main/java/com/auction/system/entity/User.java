@@ -49,9 +49,19 @@ public class User {
     @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
 
+    @Column(name = "frozen_balance", nullable = false, precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal frozenBalance = BigDecimal.ZERO;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // Helper method to get available balance
+    @Transient
+    public BigDecimal getAvailableBalance() {
+        return balance.subtract(frozenBalance);
+    }
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

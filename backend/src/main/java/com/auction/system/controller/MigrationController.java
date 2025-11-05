@@ -71,4 +71,29 @@ public class MigrationController {
 
         return result;
     }
+
+    @PostMapping("/add-frozen-balance")
+    public Map<String, String> addFrozenBalanceColumn() {
+        Map<String, String> result = new HashMap<>();
+
+        try {
+            log.info("🔄 Adding frozen_balance column to users table...");
+
+            // Add frozen_balance column if it doesn't exist
+            jdbcTemplate.execute(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS frozen_balance NUMERIC(10,2) NOT NULL DEFAULT 0"
+            );
+
+            log.info("✅ frozen_balance column added successfully!");
+            result.put("status", "success");
+            result.put("message", "frozen_balance column added to users table");
+
+        } catch (Exception e) {
+            log.error("❌ Failed to add frozen_balance column: {}", e.getMessage());
+            result.put("status", "error");
+            result.put("message", "Failed to add frozen_balance column: " + e.getMessage());
+        }
+
+        return result;
+    }
 }
