@@ -35,6 +35,25 @@ public class DatabaseMigration implements CommandLineRunner {
                 log.info("✅ Updated {} existing users with USER role", updated);
             }
 
+            // Drop old duplicate indexes
+            log.info("🔄 Dropping old duplicate indexes...");
+            String[] dropIndexes = {
+                "DROP INDEX IF EXISTS idx_auction_id",
+                "DROP INDEX IF EXISTS idx_bidder_id",
+                "DROP INDEX IF EXISTS idx_buyer_id",
+                "DROP INDEX IF EXISTS idx_seller_id",
+                "DROP INDEX IF EXISTS idx_user_id"
+            };
+
+            for (String dropSql : dropIndexes) {
+                try {
+                    jdbcTemplate.execute(dropSql);
+                } catch (Exception ex) {
+                    log.warn("Index may not exist: {}", ex.getMessage());
+                }
+            }
+            log.info("✅ Old indexes dropped successfully");
+
         } catch (Exception e) {
             log.error("❌ Database migration failed: {}", e.getMessage());
             // Don't throw exception - let application continue
