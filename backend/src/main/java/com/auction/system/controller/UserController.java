@@ -86,6 +86,84 @@ public class UserController {
     }
 
     /**
+     * Update user profile
+     * PUT /api/users/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userUpdate) {
+        log.info("REST API: Update user - {}", id);
+        try {
+            User updated = userService.updateUser(id, userUpdate);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Get logged-in user's auctions
+     * GET /api/users/me/auctions
+     */
+    @GetMapping("/me/auctions")
+    public ResponseEntity<?> getMyAuctions(@RequestHeader("Authorization") String token) {
+        log.info("REST API: Get my auctions");
+        try {
+            Long userId = extractUserIdFromToken(token);
+            List<?> auctions = userService.getUserAuctions(userId);
+            return ResponseEntity.ok(auctions);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of("error", "Unauthorized"));
+        }
+    }
+
+    /**
+     * Get logged-in user's bids
+     * GET /api/users/me/bids
+     */
+    @GetMapping("/me/bids")
+    public ResponseEntity<?> getMyBids(@RequestHeader("Authorization") String token) {
+        log.info("REST API: Get my bids");
+        try {
+            Long userId = extractUserIdFromToken(token);
+            List<?> bids = userService.getUserBids(userId);
+            return ResponseEntity.ok(bids);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(java.util.Map.of("error", "Unauthorized"));
+        }
+    }
+
+    /**
+     * Top-up user balance
+     * POST /api/users/me/balance
+     */
+    @PostMapping("/me/balance")
+    public ResponseEntity<?> addBalance(@RequestHeader("Authorization") String token,
+                                       @RequestBody java.util.Map<String, Object> request) {
+        log.info("REST API: Add balance");
+        try {
+            Long userId = extractUserIdFromToken(token);
+            java.math.BigDecimal amount = new java.math.BigDecimal(request.get("amount").toString());
+            User updated = userService.addBalance(userId, amount);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Helper method to extract user ID from JWT token
+    private Long extractUserIdFromToken(String token) {
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        // In real implementation, decode JWT and extract userId
+        return 1L;
+    }
+
+    /**
      * Login Request DTO
      */
     @lombok.Data

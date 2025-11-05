@@ -216,4 +216,23 @@ public class AuctionService {
         }
         return auction.getMandatoryEndTime();
     }
+
+    /**
+     * Extend auction deadline (Admin function)
+     */
+    @Transactional
+    public Auction extendDeadline(Long auctionId, int hours) {
+        Auction auction = auctionRepository.findById(auctionId)
+                .orElseThrow(() -> new RuntimeException("Auction not found"));
+
+        LocalDateTime currentDeadline = auction.getCurrentDeadline() != null
+                ? auction.getCurrentDeadline()
+                : auction.getMandatoryEndTime();
+
+        LocalDateTime newDeadline = currentDeadline.plusHours(hours);
+        auction.setCurrentDeadline(newDeadline);
+        auction.setMandatoryEndTime(newDeadline);
+
+        return auctionRepository.save(auction);
+    }
 }

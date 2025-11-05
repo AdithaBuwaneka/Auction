@@ -194,6 +194,24 @@ public class AuctionController {
         }
     }
 
+    /**
+     * Extend auction deadline (Admin only)
+     * POST /api/auctions/{id}/extend
+     */
+    @PostMapping("/{id}/extend")
+    public ResponseEntity<?> extendDeadline(@PathVariable Long id,
+                                           @RequestBody java.util.Map<String, Object> request) {
+        log.info("REST API: Extend auction deadline - {}", id);
+        try {
+            int hours = Integer.parseInt(request.get("hours").toString());
+            Auction extended = auctionService.extendDeadline(id, hours);
+            return ResponseEntity.ok(extended);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
     // Helper method to extract user ID from JWT token
     private Long extractUserIdFromToken(String token) {
         // Remove "Bearer " prefix

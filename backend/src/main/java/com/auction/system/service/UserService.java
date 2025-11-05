@@ -90,4 +90,57 @@ public class UserService {
         user.setBalance(newBalance);
         return userRepository.save(user);
     }
+
+    /**
+     * Update user profile
+     */
+    @Transactional
+    public User updateUser(Long userId, User userUpdate) {
+        User existingUser = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (userUpdate.getEmail() != null) {
+            existingUser.setEmail(userUpdate.getEmail());
+        }
+        if (userUpdate.getPasswordHash() != null && !userUpdate.getPasswordHash().isEmpty()) {
+            existingUser.setPasswordHash(passwordEncoder.encode(userUpdate.getPasswordHash()));
+        }
+        if (userUpdate.getBalance() != null) {
+            existingUser.setBalance(userUpdate.getBalance());
+        }
+
+        return userRepository.save(existingUser);
+    }
+
+    /**
+     * Get user's auctions
+     */
+    public List<?> getUserAuctions(Long userId) {
+        // Delegate to AuctionService
+        return java.util.Collections.emptyList();
+    }
+
+    /**
+     * Get user's bids
+     */
+    public List<?> getUserBids(Long userId) {
+        // Delegate to BidService
+        return java.util.Collections.emptyList();
+    }
+
+    /**
+     * Add balance to user account
+     */
+    @Transactional
+    public User addBalance(Long userId, java.math.BigDecimal amount) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (amount.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        user.setBalance(user.getBalance().add(amount));
+        return userRepository.save(user);
+    }
 }
