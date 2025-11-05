@@ -31,25 +31,29 @@ backend/
 │   │
 │   ├── entity/                          # Database entities (JPA)
 │   │   ├── User.java                    # User entity
+│   │   ├── UserRole.java                # User role enum (USER, ADMIN)
 │   │   ├── Auction.java                 # Auction entity
 │   │   ├── Bid.java                     # Bid entity
 │   │   ├── Transaction.java             # Transaction entity
-│   │   └── Notification.java            # Notification entity
+│   │   ├── Notification.java            # Notification entity
+│   │   └── WalletTransaction.java       # Wallet transaction entity
 │   │
 │   ├── repository/                      # Spring Data JPA repositories
 │   │   ├── UserRepository.java
 │   │   ├── AuctionRepository.java
 │   │   ├── BidRepository.java
 │   │   ├── TransactionRepository.java
-│   │   └── NotificationRepository.java
+│   │   ├── NotificationRepository.java
+│   │   └── WalletTransactionRepository.java
 │   │
 │   ├── service/                         # Business logic layer
 │   │   ├── UserService.java
 │   │   ├── AuctionService.java
-│   │   ├── BidService.java
+│   │   ├── BidService.java              # ⭐ MEMBER 2: Thread-safe bid processing (synchronized)
 │   │   ├── TransactionService.java
 │   │   ├── NotificationService.java
-│   │   └── WalletService.java
+│   │   ├── WalletService.java
+│   │   └── AdminService.java
 │   │
 │   ├── controller/                      # REST API controllers
 │   │   ├── AuthController.java          # Authentication endpoints
@@ -60,15 +64,23 @@ backend/
 │   │   ├── NotificationController.java  # Notification endpoints
 │   │   ├── WalletController.java        # Wallet management endpoints
 │   │   ├── FileUploadController.java    # Image upload endpoints
-│   │   ├── MonitorController.java       # System monitoring endpoints
+│   │   ├── HealthController.java        # Health check endpoints
+│   │   ├── MigrationController.java     # Database migration endpoints
 │   │   └── admin/                       # Admin-only controllers
-│   │       └── AdminController.java
+│   │       ├── AdminController.java                         # General admin operations
+│   │       ├── ThreadPoolMonitorController.java             # ⭐ MEMBER 2: Thread pool monitoring
+│   │       ├── TcpMonitorController.java                    # ⭐ MEMBER 1: TCP server monitoring
+│   │       ├── NioMonitorController.java                    # ⭐ MEMBER 4: NIO server monitoring
+│   │       ├── SslMonitorController.java                    # ⭐ MEMBER 5: SSL server monitoring
+│   │       └── MulticastMonitorController.java              # ⭐ MEMBER 3: Multicast monitoring
 │   │
 │   ├── dto/                             # Data Transfer Objects
 │   │   ├── BidRequest.java
 │   │   ├── BidResponse.java
 │   │   ├── AuctionCreateRequest.java
-│   │   └── AuthRequest.java
+│   │   ├── AuthResponse.java
+│   │   ├── LoginRequest.java
+│   │   └── RegisterRequest.java
 │   │
 │   ├── security/                        # Spring Security configuration
 │   │   ├── SecurityConfig.java          # Security & CORS configuration
@@ -79,17 +91,18 @@ backend/
 │   │   ├── CorsConfig.java              # CORS configuration
 │   │   ├── DatabaseConfig.java          # Database configuration
 │   │   ├── DataSourceConfig.java        # DataSource configuration
-│   │   └── FileUploadConfig.java        # File upload configuration
+│   │   ├── FileUploadConfig.java        # File upload configuration
+│   │   └── OpenApiConfig.java           # Swagger/OpenAPI documentation configuration
 │   │
-│   ├── scheduler/                       # Scheduled tasks
-│   │   └── AuctionScheduler.java        # Auction deadline management (Member 2)
+│   ├── scheduler/                       # ⭐ MEMBER 2: Scheduled tasks (Multithreading)
+│   │   └── AuctionScheduler.java        # Auction deadline management (@Scheduled)
 │   │
 │   ├── websocket/                       # WebSocket real-time communication
 │   │   ├── WebSocketConfig.java         # WebSocket configuration
-│   │   └── AuctionWebSocketHandler.java # Real-time auction updates
+│   │   └── WebSocketEventService.java   # Real-time event broadcasting service
 │   │
 │   ├── util/                            # Utility classes
-│   │   └── ThreadPoolMonitor.java       # Thread pool monitoring (Member 2)
+│   │   └── DatabaseMigration.java       # Database migration utilities
 │   │
 │   └── network/                         # Network Programming Implementations
 │       │
@@ -111,7 +124,7 @@ backend/
 │
 ├── src/main/resources/
 │   ├── application.properties           # Application configuration
-│   └── keystore.p12                     # SSL certificate (Member 5)
+│   └── keystore.p12                     # ⭐ MEMBER 5: SSL certificate/keystore
 │
 └── pom.xml                              # Maven dependencies
 ```
@@ -127,12 +140,13 @@ backend/
 #### ⭐ Member 2: Multithreading & Concurrency
 **Locations:**
 - `src/main/java/com/auction/system/scheduler/AuctionScheduler.java`
-- `src/main/java/com/auction/system/util/ThreadPoolMonitor.java`
+- `src/main/java/com/auction/system/controller/admin/ThreadPoolMonitorController.java`
 - `src/main/java/com/auction/system/service/BidService.java` (pessimistic locking)
-- ✅ Thread pool configuration (50 core threads, 100 max)
-- ✅ Scheduled auction deadline checks (every 5 seconds)
-- ✅ Concurrent bid processing with database locking
-- ✅ Thread pool monitoring and statistics
+- ✅ Thread pool configuration (50 core threads, 100 max) - configured in application.properties
+- ✅ Scheduled auction deadline checks (@Scheduled, runs every 30 seconds)
+- ✅ Concurrent bid processing with `synchronized` method in BidService
+- ✅ Thread pool monitoring endpoints via ThreadPoolMonitorController
+- ✅ Multi-threaded ExecutorService used in TCPBidServer (Member 1 integration)
 
 #### ⭐ Member 3: UDP Multicast Broadcasting
 **Location:** `src/main/java/com/auction/system/network/multicast/`
@@ -629,12 +643,13 @@ See detailed implementation in the **Project Structure** section above. Quick re
 
 ### Member 2: Multithreading & Concurrency
 - ✅ Implemented across multiple components:
-  - `scheduler/AuctionScheduler.java` - Scheduled tasks (@Scheduled)
-  - `util/ThreadPoolMonitor.java` - Thread pool monitoring
-  - `service/BidService.java` - Pessimistic locking (@Lock)
-- ExecutorService with 50 core threads, 100 max threads
-- Thread-safe bid processing with database-level locking
-- Auction deadline checks every 5 seconds
+  - `scheduler/AuctionScheduler.java` - Scheduled tasks (@Scheduled, runs every 30 seconds)
+  - `controller/admin/ThreadPoolMonitorController.java` - Thread pool monitoring endpoints
+  - `service/BidService.java` - Thread-safe with `synchronized` method
+  - `network/tcp/TCPBidServer.java` - Multi-threaded TCP server with ExecutorService (Member 1 integration)
+- Thread pool configured in application.properties (50 core threads, 100 max)
+- Thread-safe bid processing with `synchronized` keyword
+- Real-time thread statistics via admin monitoring endpoints
 
 ### Member 3: UDP Multicast Broadcasting (230.0.0.1:4446)
 - ✅ Implemented in `network/multicast/`
