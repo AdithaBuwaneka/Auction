@@ -109,4 +109,19 @@ public class TransactionService {
                 .orElseThrow(() -> new RuntimeException("Auction not found"));
         return transactionRepository.findByAuction(auction);
     }
+
+    /**
+     * Get all transactions (Admin)
+     */
+    public List<Transaction> getAllTransactions() {
+        return transactionRepository.findAll();
+    }
+
+    /**
+     * Get transaction by ID (Admin)
+     */
+    public Transaction getTransactionById(Long id) {
+        return transactionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+    }
 }

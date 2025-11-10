@@ -56,6 +56,13 @@ public class AuctionService {
     }
 
     /**
+     * Get all auctions (regardless of status)
+     */
+    public List<Auction> getAllAuctions() {
+        return auctionRepository.findAll();
+    }
+
+    /**
      * Get all active auctions
      */
     public List<Auction> getActiveAuctions() {

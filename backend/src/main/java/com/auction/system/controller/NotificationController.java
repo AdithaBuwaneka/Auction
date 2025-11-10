@@ -42,6 +42,22 @@ public class NotificationController {
     }
 
     /**
+     * Get user notifications by user ID
+     * GET /api/notifications/user/{userId}
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable Long userId) {
+        log.info("REST API: Get notifications for user - {}", userId);
+        try {
+            List<Notification> notifications = notificationService.getUserNotifications(userId);
+            return ResponseEntity.ok(notifications);
+        } catch (Exception e) {
+            log.error("Error getting user notifications", e);
+            return ResponseEntity.status(404).build();
+        }
+    }
+
+    /**
      * Mark notification as read
      * PUT /api/notifications/{id}/read
      */
