@@ -96,4 +96,36 @@ public class TransactionController {
                     .body(Map.of("error", "Transaction not found"));
         }
     }
+
+    /**
+     * Get all transactions (Admin only)
+     * GET /api/admin/transactions
+     */
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<Transaction>> getAllTransactions() {
+        log.info("REST API: Get all transactions (Admin)");
+        try {
+            List<Transaction> transactions = transactionService.getAllTransactions();
+            return ResponseEntity.ok(transactions);
+        } catch (Exception e) {
+            log.error("Error fetching all transactions", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Get transaction by ID (Admin only)
+     * GET /api/admin/transactions/{id}
+     */
+    @GetMapping("/admin/{id}")
+    public ResponseEntity<?> getTransactionById(@PathVariable Long id) {
+        log.info("REST API: Get transaction by ID - {}", id);
+        try {
+            Transaction transaction = transactionService.getTransactionById(id);
+            return ResponseEntity.ok(transaction);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Transaction not found"));
+        }
+    }
 }
