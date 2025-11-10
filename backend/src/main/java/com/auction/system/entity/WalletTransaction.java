@@ -1,5 +1,6 @@
 package com.auction.system.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +34,11 @@ public class WalletTransaction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
+
+    @Column(name = "user_id", insertable = false, updatable = false)
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "transaction_type", nullable = false, length = 30)
@@ -65,10 +70,12 @@ public class WalletTransaction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_auction_id")
+    @JsonIgnore
     private Auction relatedAuction;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_bid_id")
+    @JsonIgnore
     private Bid relatedBid;
 
     @CreationTimestamp

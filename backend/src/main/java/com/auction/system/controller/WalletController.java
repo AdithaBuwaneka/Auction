@@ -30,11 +30,10 @@ public class WalletController {
      * POST /api/wallet/deposit
      */
     @PostMapping("/deposit")
-    public ResponseEntity<?> deposit(@RequestHeader("Authorization") String token,
-                                    @RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> deposit(@RequestBody Map<String, Object> request) {
         log.info("REST API: Wallet deposit");
         try {
-            Long userId = extractUserIdFromToken(token);
+            Long userId = Long.parseLong(request.get("userId").toString());
             BigDecimal amount = new BigDecimal(request.get("amount").toString());
             String description = request.getOrDefault("description", "Wallet deposit").toString();
 
@@ -46,7 +45,7 @@ public class WalletController {
         } catch (Exception e) {
             log.error("Error depositing to wallet", e);
             return ResponseEntity.status(500)
-                    .body(Map.of("error", "Deposit failed"));
+                    .body(Map.of("error", "Deposit failed: " + e.getMessage()));
         }
     }
 
@@ -64,6 +63,56 @@ public class WalletController {
         } catch (Exception e) {
             log.error("Error fetching wallet history", e);
             return ResponseEntity.status(401).build();
+        }
+    }
+
+    /**
+     * Get wallet balance
+     * GET /api/wallet/balance/{userId}
+     */
+    @GetMapping("/balance/{userId}")
+    public ResponseEntity<?> getBalance(@PathVariable Long userId) {
+        log.info("REST API: Get wallet balance for user {}", userId);
+        try {
+            Map<String, Object> summary = walletService.getWalletSummary(userId);
+
+            // Return only balance-related fields for frontend
+            Map<String, Object> balanceData = Map.of(
+                "balance", summary.get("totalBalance"),
+                "frozenBalance", summary.get("frozenBalance"),
+                "availableBalance", summary.get("availableBalance")
+            );
+
+            return ResponseEntity.ok(balanceData);
+        } catch (RuntimeException e) {
+            log.error("Error fetching wallet balance", e);
+            return ResponseEntity.status(404)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error fetching wallet balance", e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Failed to fetch balance"));
+        }
+    }
+
+    /**
+     * Get wallet transactions
+     * GET /api/wallet/transactions/{userId}
+     */
+    @GetMapping("/transactions/{userId}")
+    public ResponseEntity<?> getTransactions(@PathVariable Long userId) {
+        log.info("REST API: Get wallet transactions for user {}", userId);
+        try {
+            List<WalletTransaction> transactions = walletService.getWalletHistory(userId);
+            return ResponseEntity.ok(transactions);
+        } catch (RuntimeException e) {
+            log.error("Error fetching wallet transactions", e);
+            return ResponseEntity.status(404)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error fetching wallet transactions", e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Failed to fetch transactions"));
         }
     }
 
@@ -89,11 +138,10 @@ public class WalletController {
      * POST /api/wallet/withdraw
      */
     @PostMapping("/withdraw")
-    public ResponseEntity<?> withdraw(@RequestHeader("Authorization") String token,
-                                     @RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> withdraw(@RequestBody Map<String, Object> request) {
         log.info("REST API: Wallet withdraw");
         try {
-            Long userId = extractUserIdFromToken(token);
+            Long userId = Long.parseLong(request.get("userId").toString());
             BigDecimal amount = new BigDecimal(request.get("amount").toString());
             String description = request.getOrDefault("description", "Wallet withdrawal").toString();
 
@@ -105,7 +153,7 @@ public class WalletController {
         } catch (Exception e) {
             log.error("Error withdrawing from wallet", e);
             return ResponseEntity.status(500)
-                    .body(Map.of("error", "Withdrawal failed"));
+                    .body(Map.of("error", "Withdrawal failed: " + e.getMessage()));
         }
     }
 

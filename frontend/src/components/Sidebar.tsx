@@ -17,6 +17,9 @@ import {
   User,
   Menu,
   X,
+  Package,
+  TrendingUp,
+  Bell,
 } from 'lucide-react';
 
 const adminNavItems = [
@@ -32,9 +35,12 @@ const adminNavItems = [
 
 const userNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Gavel, label: 'Auctions', href: '/auctions' },
-  { icon: User, label: 'My Bids', href: '/my-bids' },
+  { icon: Gavel, label: 'Browse Auctions', href: '/auctions' },
+  { icon: Package, label: 'My Auctions', href: '/my-auctions' },
+  { icon: TrendingUp, label: 'My Bids', href: '/my-bids' },
   { icon: DollarSign, label: 'Wallet', href: '/wallet' },
+  { icon: Bell, label: 'Notifications', href: '/notifications' },
+  { icon: User, label: 'Profile', href: '/profile' },
 ];
 
 export default function Sidebar() {
@@ -75,7 +81,7 @@ export default function Sidebar() {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              
+
               return (
                 <Link
                   key={item.href}
