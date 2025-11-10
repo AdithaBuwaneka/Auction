@@ -37,8 +37,9 @@ public class Auction {
     @Column(name = "auction_id")
     private Long auctionId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "seller_id", nullable = false)
+    @JsonIgnoreProperties({"password", "wallet", "auctions", "bids", "notifications", "wonAuctions"})
     private User seller;
 
     @Column(name = "item_name", nullable = false, length = 200)
@@ -73,8 +74,9 @@ public class Auction {
     @Builder.Default
     private AuctionStatus status = AuctionStatus.PENDING;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "winner_id")
+    @JsonIgnoreProperties({"password", "wallet", "auctions", "bids", "notifications", "wonAuctions"})
     private User winner;
 
     @CreationTimestamp

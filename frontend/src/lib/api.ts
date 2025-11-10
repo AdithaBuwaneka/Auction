@@ -63,46 +63,84 @@ export const adminAPI = {
   cancelAuction: (id: number) => api.delete(`/auctions/${id}`),
   
   // Transactions
-  getAllTransactions: () => api.get('/transactions'),
-  getTransactionById: (id: number) => api.get(`/transactions/${id}`),
+  getAllTransactions: () => api.get('/transactions/admin/all'),
+  getTransactionById: (id: number) => api.get(`/transactions/admin/${id}`),
   
   // Bids
   getAuctionBids: (auctionId: number) => api.get(`/auctions/${auctionId}/bids`),
   
   // System Monitoring
   getSystemHealth: () => api.get('/health'),
-  getTcpMonitor: () => api.get('/admin/monitor/tcp'),
-  getThreadPoolMonitor: () => api.get('/admin/monitor/threadpool'),
-  getMulticastMonitor: () => api.get('/admin/monitor/multicast'),
-  getNioMonitor: () => api.get('/admin/monitor/nio'),
-  getSslMonitor: () => api.get('/admin/monitor/ssl'),
+  getTcpMonitor: () => api.get('/admin/tcp/stats'),
+  getThreadPoolMonitor: () => api.get('/admin/threads/pool'),
+  getMulticastMonitor: () => api.get('/admin/multicast/stats'),
+  getNioMonitor: () => api.get('/admin/nio/stats'),
+  getSslMonitor: () => api.get('/admin/ssl/stats'),
 };
 
 // User API
 export const userAPI = {
   getCurrentUser: () => api.get('/users/me'),
-  getUserWallet: () => api.get('/wallet'),
-  getUserBids: () => api.get('/users/me/bids'),
-  getUserAuctions: () => api.get('/users/me/auctions'),
-  getUserTransactions: () => api.get('/users/me/transactions'),
+  updateProfile: (data: any) => api.put('/users/me', data),
+  getUserById: (id: number) => api.get(`/users/${id}`),
+};
+
+// Wallet API
+export const walletAPI = {
+  getBalance: (userId: number) => api.get(`/wallet/balance/${userId}`),
+  getTransactions: (userId: number) => api.get(`/wallet/transactions/${userId}`),
+  deposit: (userId: number, amount: number) =>
+    api.post('/wallet/deposit', { userId, amount }),
+  withdraw: (userId: number, amount: number) =>
+    api.post('/wallet/withdraw', { userId, amount }),
 };
 
 // Auction API
 export const auctionAPI = {
   getAllAuctions: () => api.get('/auctions'),
-  getAuctionById: (id: number) => api.get(`/auctions/${id}`),
-  createAuction: (data: any) => api.post('/auctions', data),
   getActiveAuctions: () => api.get('/auctions/active'),
+  getAuctionById: (id: number) => api.get(`/auctions/${id}`),
+  getSellerAuctions: (sellerId: number) => api.get(`/auctions/seller/${sellerId}`),
+  createAuction: (data: any) => api.post('/auctions', data),
+  updateAuction: (id: number, data: any) => api.put(`/auctions/${id}`, data),
+  deleteAuction: (id: number) => api.delete(`/auctions/${id}`),
+  searchAuctions: (keyword: string) => api.get(`/auctions/search?keyword=${keyword}`),
+  closeAuction: (id: number) => api.post(`/auctions/${id}/close`),
 };
 
 // Bid API
 export const bidAPI = {
-  placeBid: (auctionId: number, amount: number) =>
-    api.post('/bids', { auctionId, amount }),
-  getUserBids: () => api.get('/bids/my-bids'),
+  placeBid: (auctionId: number, bidderId: number, bidAmount: number) =>
+    api.post('/bids', { auctionId, bidderId, bidAmount }),
+  getUserBids: (userId: number) => api.get(`/bids/user/${userId}`),
+  getAuctionBids: (auctionId: number) => api.get(`/bids/auction/${auctionId}`),
+  getHighestBid: (auctionId: number) => api.get(`/bids/auction/${auctionId}/highest`),
+  getBidById: (bidId: number) => api.get(`/bids/${bidId}`),
 };
 
 // Transaction API
 export const transactionAPI = {
-  getUserTransactions: () => api.get('/transactions/my-transactions'),
+  getAllTransactions: () => api.get('/transactions'),
+  getTransactionById: (id: number) => api.get(`/transactions/${id}`),
+  getUserTransactions: (userId: number) => api.get(`/transactions/user/${userId}`),
+};
+
+// Notification API
+export const notificationAPI = {
+  getUserNotifications: (userId: number) => api.get(`/notifications/user/${userId}`),
+  markAsRead: (notificationId: number) => api.put(`/notifications/${notificationId}/read`),
+};
+
+// File Upload API
+export const fileUploadAPI = {
+  uploadAuctionImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/upload/auction-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  deleteAuctionImage: (filename: string) => api.delete(`/upload/auction-image/${filename}`),
 };

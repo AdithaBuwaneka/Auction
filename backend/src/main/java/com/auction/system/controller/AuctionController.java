@@ -96,6 +96,17 @@ public class AuctionController {
     }
 
     /**
+     * Get all auctions
+     * GET /api/auctions
+     */
+    @GetMapping
+    public ResponseEntity<List<Auction>> getAllAuctions() {
+        log.info("REST API: Get all auctions");
+        List<Auction> auctions = auctionService.getAllAuctions();
+        return ResponseEntity.ok(auctions);
+    }
+
+    /**
      * Get all active auctions
      * GET /api/auctions/active
      */
@@ -197,6 +208,32 @@ public class AuctionController {
             return ResponseEntity.ok(closed);
         } catch (Exception e) {
             log.error("Error closing auction", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Approve pending auction (Admin only)
+     * PUT /api/admin/auctions/{id}/approve
+     */
+    @PutMapping("/admin/{id}/approve")
+    public ResponseEntity<?> approveAuction(@PathVariable Long id) {
+        log.info("REST API: Approve auction - {}", id);
+        try {
+            Auction auction = auctionService.getAuctionById(id)
+                    .orElseThrow(() -> new RuntimeException("Auction not found"));
+
+            // Update status to ACTIVE
+            auction.setStatus(com.auction.system.entity.Auction.AuctionStatus.ACTIVE);
+            Auction approved = auctionService.updateAuction(id, auction);
+
+            return ResponseEntity.ok(java.util.Map.of(
+                    "message", "Auction approved successfully",
+                    "auction", approved
+            ));
+        } catch (Exception e) {
+            log.error("Error approving auction", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(java.util.Map.of("error", e.getMessage()));
         }

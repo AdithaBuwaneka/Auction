@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Real-Time Auction System - Frontend
 
-## Getting Started
+A modern, feature-rich auction platform built with Next.js 16, React 19, TypeScript, and Tailwind CSS.
 
-First, run the development server:
+## 🚀 Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Open browser
+# http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### User Features
+- 🔐 **Authentication** - JWT-based login/register
+- 🔍 **Browse Auctions** - Search, filter, and discover items
+- 📊 **Auction Details** - Live countdown, bid history, real-time updates
+- 💰 **Bidding System** - Place bids with automatic fund freezing
+- 💳 **Wallet Management** - Deposit, withdraw, transaction history
+- 🎯 **Create Auctions** - Full auction creation with image upload
+- 📈 **Track Activity** - Monitor your bids and auctions
+- 🔔 **Notifications** - Real-time updates on auction events
+- 👤 **Profile Management** - Edit profile, view stats
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Admin Features
+- 📊 **Dashboard** - Real-time statistics and monitoring
+- 👥 **User Management** - View, ban, activate users
+- 🔨 **Auction Management** - Approve, cancel auctions
+- 💵 **Transaction Monitoring** - Track all payments
+- 📈 **Analytics** - Charts and insights
+- ⚙️ **System Monitoring** - TCP, NIO, SSL, Multicast servers
+- 📝 **Logs** - System activity logs
+- 🔧 **Settings** - Platform configuration
 
-## Learn More
+## 📦 Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework:** Next.js 16 (App Router)
+- **Language:** TypeScript 5
+- **Styling:** Tailwind CSS 3.4
+- **Icons:** Lucide React
+- **Charts:** Recharts
+- **HTTP Client:** Axios
+- **Date Formatting:** date-fns
+- **WebSocket:** STOMP.js + SockJS
+- **State Management:** React Context API
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📚 Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **[SETUP.md](./SETUP.md)** - Complete installation and configuration guide
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
 
-## Deploy on Vercel
+## 📈 Completion Status: 95%
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+All core features implemented and ready for production!
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+**Built with ❤️ using Next.js 16 and React 19**
