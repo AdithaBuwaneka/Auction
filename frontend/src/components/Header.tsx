@@ -27,8 +27,8 @@ export default function Header() {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      // Poll for new notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
+      // Poll for new notifications every 1 second for real-time updates
+      const interval = setInterval(fetchNotifications, 1000);
       return () => clearInterval(interval);
     }
   }, [user]);

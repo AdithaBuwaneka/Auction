@@ -58,4 +58,29 @@ public class NotificationService {
 
         return notificationRepository.save(notification);
     }
+
+    /**
+     * Delete a notification
+     */
+    @Transactional
+    public void deleteNotification(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
+
+        notificationRepository.delete(notification);
+        log.info("Deleted notification ID: {}", notificationId);
+    }
+
+    /**
+     * Clear all notifications for a user
+     */
+    @Transactional
+    public void clearAllNotifications(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+        notificationRepository.deleteAll(notifications);
+        log.info("Cleared all notifications for user ID: {}", userId);
+    }
 }
