@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { adminAPI } from '@/lib/api';
 import { Save, Info } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -17,10 +18,46 @@ export default function SettingsPage() {
     multicastGroup: '230.0.0.1',
     multicastPort: 4446,
   });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    alert('Settings saved successfully!');
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await adminAPI.getSystemSettings();
+      if (response.data) {
+        setSettings(prev => ({ ...prev, ...response.data }));
+      }
+    } catch (error) {
+      console.warn('Failed to fetch settings - using defaults');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await adminAPI.updateSystemSettings(settings);
+      alert('Settings saved successfully!');
+    } catch (error: any) {
+      console.error('Failed to save settings:', error);
+      alert('Failed to save settings. Please ensure the backend is running.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -193,10 +230,11 @@ export default function SettingsPage() {
         <div className="flex justify-end">
           <button
             onClick={handleSave}
-            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            disabled={saving}
+            className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save size={20} />
-            Save Settings
+            <Save size={20} className={saving ? 'animate-pulse' : ''} />
+            {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
       </div>

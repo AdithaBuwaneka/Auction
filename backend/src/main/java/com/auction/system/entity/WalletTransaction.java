@@ -68,6 +68,9 @@ public class WalletTransaction {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "related_auction_id", insertable = false, updatable = false)
+    private Long relatedAuctionId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_auction_id")
     @JsonIgnore
@@ -89,9 +92,12 @@ public class WalletTransaction {
         DEPOSIT,           // User adds money to wallet
         FREEZE,            // Money frozen when placing bid
         UNFREEZE,          // Money unfrozen when outbid
-        DEDUCT,            // Money deducted when winning auction
+        DEDUCT,            // Money deducted when winning auction (DEPRECATED - use BUYER_PAYMENT)
         REFUND,            // Money refunded (admin action)
         WITHDRAW,          // User withdraws money
-        ADMIN_ADJUSTMENT   // Admin manual adjustment
+        ADMIN_ADJUSTMENT,  // Admin manual adjustment
+        BUYER_PAYMENT,     // Buyer pays for won auction (full amount)
+        SELLER_PAYMENT,    // Seller receives payment (80% of auction)
+        SYSTEM_FEE         // Admin receives commission (20% of auction)
     }
 }

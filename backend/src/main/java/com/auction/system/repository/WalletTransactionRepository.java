@@ -28,4 +28,9 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
      * Count transactions by type
      */
     long countByUserAndTransactionType(User user, WalletTransaction.TransactionType type);
+
+    /**
+     * Find all wallet transactions ordered by created date (Admin only)
+     */
+    List<WalletTransaction> findAllByOrderByCreatedAtDesc();
 }

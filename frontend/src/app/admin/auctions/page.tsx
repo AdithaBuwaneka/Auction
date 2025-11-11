@@ -11,6 +11,7 @@ export default function AuctionsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'pending' | 'ended'>('all');
+  const [sortView, setSortView] = useState<'all' | 'recent'>('all');
 
   useEffect(() => {
     fetchAuctions();
@@ -55,6 +56,18 @@ export default function AuctionsPage() {
                          auction.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || auction.status.toLowerCase() === filterStatus;
     return matchesSearch && matchesFilter;
+  });
+
+  // Apply sorting based on view
+  const sortedAuctions = [...filteredAuctions].sort((a, b) => {
+    if (sortView === 'recent') {
+      // Sort by creation date (most recent first)
+      const dateA = new Date(a.createdAt || a.startTime).getTime();
+      const dateB = new Date(b.createdAt || b.startTime).getTime();
+      return dateB - dateA;
+    }
+    // Default: show all without specific sorting
+    return 0;
   });
 
   if (loading) {
@@ -102,7 +115,8 @@ export default function AuctionsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col gap-4">
+          {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -113,27 +127,61 @@ export default function AuctionsPage() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div className="flex gap-2">
-            {['all', 'active', 'pending', 'ended'].map((status) => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status as any)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${
-                  filterStatus === status
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {status}
-              </button>
-            ))}
+
+          {/* Status Filter */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-2">Filter by Status:</p>
+              <div className="flex flex-wrap gap-2">
+                {['all', 'active', 'pending', 'ended'].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status as any)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${
+                      filterStatus === status
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* View/Sort Options */}
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-2">View:</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSortView('all')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    sortView === 'all'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setSortView('recent')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    sortView === 'recent'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Most Recent
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Auctions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAuctions.map((auction) => (
+        {sortedAuctions.map((auction) => (
           <AuctionCard
             key={auction.auctionId}
             auction={auction}
@@ -143,7 +191,7 @@ export default function AuctionsPage() {
         ))}
       </div>
 
-      {filteredAuctions.length === 0 && (
+      {sortedAuctions.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           No auctions found matching your criteria
         </div>

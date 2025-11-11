@@ -22,6 +22,7 @@ public class WalletService {
 
     private final UserRepository userRepository;
     private final WalletTransactionRepository walletTransactionRepository;
+    private final com.auction.system.repository.TransactionRepository transactionRepository;
 
     /**
      * Deposit money to user wallet
@@ -443,5 +444,149 @@ public class WalletService {
                 "totalFreezes", totalFreezes,
                 "totalDeductions", totalDeductions
         );
+    }
+
+    /**
+     * Process auction completion payment with 20% admin fee and 80% to seller
+     * Creates 3 transactions:
+     * 1. BUYER_PAYMENT - Deduct full amount from buyer
+     * 2. SYSTEM_FEE - Add 20% to admin
+     * 3. SELLER_PAYMENT - Add 80% to seller
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public java.util.Map<String, WalletTransaction> processAuctionPayment(
+            Long buyerId, Long sellerId, BigDecimal finalPrice, Auction auction) {
+
+        User buyer = userRepository.findById(buyerId)
+                .orElseThrow(() -> new RuntimeException("Buyer not found"));
+        User seller = userRepository.findById(sellerId)
+                .orElseThrow(() -> new RuntimeException("Seller not found"));
+
+        // Find admin user (userId = 4 based on your data)
+        User admin = userRepository.findById(4L)
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+
+        // Calculate split: 20% admin, 80% seller
+        BigDecimal adminFee = finalPrice.multiply(new BigDecimal("0.20"));
+        BigDecimal sellerPayment = finalPrice.multiply(new BigDecimal("0.80"));
+
+        // 1. Deduct full amount from buyer (from frozen balance)
+        if (buyer.getFrozenBalance().compareTo(finalPrice) < 0) {
+            throw new IllegalArgumentException("Buyer has insufficient frozen balance");
+        }
+
+        BigDecimal buyerBalanceBefore = buyer.getBalance();
+        BigDecimal buyerFrozenBefore = buyer.getFrozenBalance();
+        BigDecimal buyerAvailableBefore = buyer.getAvailableBalance();
+
+        buyer.setBalance(buyer.getBalance().subtract(finalPrice));
+        buyer.setFrozenBalance(buyer.getFrozenBalance().subtract(finalPrice));
+
+        BigDecimal buyerBalanceAfter = buyer.getBalance();
+        BigDecimal buyerFrozenAfter = buyer.getFrozenBalance();
+        BigDecimal buyerAvailableAfter = buyer.getAvailableBalance();
+
+        userRepository.save(buyer);
+
+        WalletTransaction buyerTransaction = WalletTransaction.builder()
+                .user(buyer)
+                .transactionType(WalletTransaction.TransactionType.BUYER_PAYMENT)
+                .amount(finalPrice)
+                .balanceBefore(buyerBalanceBefore)
+                .balanceAfter(buyerBalanceAfter)
+                .frozenBefore(buyerFrozenBefore)
+                .frozenAfter(buyerFrozenAfter)
+                .availableBefore(buyerAvailableBefore)
+                .availableAfter(buyerAvailableAfter)
+                .description("Payment for winning auction #" + auction.getAuctionId() + ": " + auction.getItemName())
+                .build();
+
+        walletTransactionRepository.save(buyerTransaction);
+        log.info("Buyer {} paid ${} for auction {}", buyerId, finalPrice, auction.getAuctionId());
+
+        // 2. Add 20% admin fee
+        BigDecimal adminBalanceBefore = admin.getBalance();
+        BigDecimal adminFrozenBefore = admin.getFrozenBalance();
+        BigDecimal adminAvailableBefore = admin.getAvailableBalance();
+
+        admin.setBalance(admin.getBalance().add(adminFee));
+
+        BigDecimal adminBalanceAfter = admin.getBalance();
+        BigDecimal adminFrozenAfter = admin.getFrozenBalance();
+        BigDecimal adminAvailableAfter = admin.getAvailableBalance();
+
+        userRepository.save(admin);
+
+        WalletTransaction adminTransaction = WalletTransaction.builder()
+                .user(admin)
+                .transactionType(WalletTransaction.TransactionType.SYSTEM_FEE)
+                .amount(adminFee)
+                .balanceBefore(adminBalanceBefore)
+                .balanceAfter(adminBalanceAfter)
+                .frozenBefore(adminFrozenBefore)
+                .frozenAfter(adminFrozenAfter)
+                .availableBefore(adminAvailableBefore)
+                .availableAfter(adminAvailableAfter)
+                .description("System fee (20%) from auction #" + auction.getAuctionId() + ": " + auction.getItemName())
+                .build();
+
+        walletTransactionRepository.save(adminTransaction);
+        log.info("Admin receives ${} (20% fee) from auction {}", adminFee, auction.getAuctionId());
+
+        // 3. Add 80% to seller
+        BigDecimal sellerBalanceBefore = seller.getBalance();
+        BigDecimal sellerFrozenBefore = seller.getFrozenBalance();
+        BigDecimal sellerAvailableBefore = seller.getAvailableBalance();
+
+        seller.setBalance(seller.getBalance().add(sellerPayment));
+
+        BigDecimal sellerBalanceAfter = seller.getBalance();
+        BigDecimal sellerFrozenAfter = seller.getFrozenBalance();
+        BigDecimal sellerAvailableAfter = seller.getAvailableBalance();
+
+        userRepository.save(seller);
+
+        WalletTransaction sellerTransaction = WalletTransaction.builder()
+                .user(seller)
+                .transactionType(WalletTransaction.TransactionType.SELLER_PAYMENT)
+                .amount(sellerPayment)
+                .balanceBefore(sellerBalanceBefore)
+                .balanceAfter(sellerBalanceAfter)
+                .frozenBefore(sellerFrozenBefore)
+                .frozenAfter(sellerFrozenAfter)
+                .availableBefore(sellerAvailableBefore)
+                .availableAfter(sellerAvailableAfter)
+                .description("Payment received (80%) for auction #" + auction.getAuctionId() + ": " + auction.getItemName())
+                .build();
+
+        walletTransactionRepository.save(sellerTransaction);
+        log.info("Seller {} receives ${} (80%) from auction {}", sellerId, sellerPayment, auction.getAuctionId());
+
+        // 4. Create main Transaction record (buyer -> seller)
+        Transaction mainTransaction = Transaction.builder()
+                .buyer(buyer)
+                .seller(seller)
+                .auction(auction)
+                .amount(finalPrice)
+                .paymentMethod("WALLET")
+                .status(Transaction.TransactionStatus.COMPLETED)
+                .build();
+
+        transactionRepository.save(mainTransaction);
+        log.info("Transaction record created for auction {} - Buyer: {}, Seller: {}, Amount: ${}",
+                auction.getAuctionId(), buyerId, sellerId, finalPrice);
+
+        return java.util.Map.of(
+                "buyerTransaction", buyerTransaction,
+                "adminTransaction", adminTransaction,
+                "sellerTransaction", sellerTransaction
+        );
+    }
+
+    /**
+     * Get all wallet transactions (Admin only)
+     */
+    public List<WalletTransaction> getAllWalletTransactions() {
+        return walletTransactionRepository.findAllByOrderByCreatedAtDesc();
     }
 }

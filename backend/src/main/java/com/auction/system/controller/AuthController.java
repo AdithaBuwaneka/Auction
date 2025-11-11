@@ -42,7 +42,7 @@ public class AuthController {
      * POST /api/auth/register
      */
     @Operation(summary = "Register new user",
-               description = "Create a new user account and receive JWT token. Users start with 10,000 balance.")
+               description = "Create a new user account and receive JWT token. Users start with 0 balance.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "User registered successfully",
                     content = @Content(schema = @Schema(implementation = AuthResponse.class))),
@@ -60,7 +60,7 @@ public class AuthController {
                     .email(request.getEmail())
                     .passwordHash(request.getPassword()) // Will be hashed in service
                     .role(UserRole.USER)
-                    .balance(BigDecimal.valueOf(10000)) // Starting balance
+                    .balance(BigDecimal.ZERO) // Starting balance
                     .isActive(true)
                     .build();
 

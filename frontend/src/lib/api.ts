@@ -27,7 +27,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Handle 401 Unauthorized or 403 Forbidden (token expired/invalid)
+    if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -62,9 +63,12 @@ export const adminAPI = {
   approveAuction: (id: number) => api.put(`/admin/auctions/${id}/approve`),
   cancelAuction: (id: number) => api.delete(`/auctions/${id}`),
   
-  // Transactions
+  // Transactions (Main auction payments)
   getAllTransactions: () => api.get('/transactions/admin/all'),
   getTransactionById: (id: number) => api.get(`/transactions/admin/${id}`),
+
+  // Wallet Transactions (Detailed wallet movements)
+  getAllWalletTransactions: () => api.get('/admin/wallet/transactions'),
   
   // Bids
   getAuctionBids: (auctionId: number) => api.get(`/auctions/${auctionId}/bids`),
@@ -76,6 +80,14 @@ export const adminAPI = {
   getMulticastMonitor: () => api.get('/admin/multicast/stats'),
   getNioMonitor: () => api.get('/admin/nio/stats'),
   getSslMonitor: () => api.get('/admin/ssl/stats'),
+
+  // Logs
+  getSystemLogs: (type?: string, limit?: number) =>
+    api.get('/admin/logs', { params: { type, limit } }),
+
+  // Settings
+  getSystemSettings: () => api.get('/admin/settings'),
+  updateSystemSettings: (settings: any) => api.put('/admin/settings', settings),
 };
 
 // User API
@@ -129,6 +141,8 @@ export const transactionAPI = {
 export const notificationAPI = {
   getUserNotifications: (userId: number) => api.get(`/notifications/user/${userId}`),
   markAsRead: (notificationId: number) => api.put(`/notifications/${notificationId}/read`),
+  deleteNotification: (notificationId: number) => api.delete(`/notifications/${notificationId}`),
+  clearAllNotifications: (userId: number) => api.delete(`/notifications/user/${userId}/clear`),
 };
 
 // File Upload API
