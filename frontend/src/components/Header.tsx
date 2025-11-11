@@ -65,6 +65,28 @@ export default function Header() {
     }
   };
 
+  const handleDeleteNotification = async (e: React.MouseEvent, notificationId: number) => {
+    e.stopPropagation();
+    try {
+      await notificationAPI.deleteNotification(notificationId);
+      fetchNotifications();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!user) return;
+    if (!confirm('Are you sure you want to clear all notifications?')) return;
+
+    try {
+      await notificationAPI.clearAllNotifications(user.userId);
+      fetchNotifications();
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+    }
+  };
+
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.read) {
       handleMarkAsRead(notification.notificationId);
@@ -129,12 +151,22 @@ export default function Header() {
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200">
                   <h3 className="font-bold text-gray-900">Notifications</h3>
-                  <button
-                    onClick={() => setShowNotifications(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={18} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleClearAll}
+                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowNotifications(false)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Notifications List */}
@@ -148,12 +180,14 @@ export default function Header() {
                     notifications.map((notification) => (
                       <div
                         key={notification.notificationId}
-                        onClick={() => handleNotificationClick(notification)}
-                        className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                        className={`group relative p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
                           !notification.read ? 'bg-blue-50' : ''
                         }`}
                       >
-                        <div className="flex items-start gap-3">
+                        <div
+                          onClick={() => handleNotificationClick(notification)}
+                          className="flex items-start gap-3 cursor-pointer"
+                        >
                           <span className="text-2xl flex-shrink-0">
                             {getNotificationIcon(notification.type)}
                           </span>
@@ -169,6 +203,14 @@ export default function Header() {
                             <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
                           )}
                         </div>
+                        {/* Delete button - appears on hover */}
+                        <button
+                          onClick={(e) => handleDeleteNotification(e, notification.notificationId)}
+                          className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
+                          title="Delete notification"
+                        >
+                          <X size={14} className="text-red-600" />
+                        </button>
                       </div>
                     ))
                   )}

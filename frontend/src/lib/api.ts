@@ -141,6 +141,8 @@ export const transactionAPI = {
 export const notificationAPI = {
   getUserNotifications: (userId: number) => api.get(`/notifications/user/${userId}`),
   markAsRead: (notificationId: number) => api.put(`/notifications/${notificationId}/read`),
+  deleteNotification: (notificationId: number) => api.delete(`/notifications/${notificationId}`),
+  clearAllNotifications: (userId: number) => api.delete(`/notifications/user/${userId}/clear`),
 };
 
 // File Upload API
