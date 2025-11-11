@@ -77,6 +77,27 @@ export default function NotificationsPage() {
     }
   };
 
+  const deleteNotification = async (notificationId: number) => {
+    try {
+      await notificationAPI.deleteNotification(notificationId);
+      setNotifications((prev) => prev.filter((n) => n.notificationId !== notificationId));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    if (!user) return;
+    if (!confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) return;
+
+    try {
+      await notificationAPI.clearAllNotifications(user.userId);
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'BID_PLACED':
@@ -154,15 +175,26 @@ export default function NotificationsPage() {
               <p className="text-gray-600">Stay updated with your auction activity</p>
             </div>
 
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors"
-              >
-                <Check size={20} className="mr-2" />
-                Mark All as Read
-              </button>
-            )}
+            <div className="flex gap-3">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors"
+                >
+                  <Check size={20} className="mr-2" />
+                  Mark All as Read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={clearAllNotifications}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center transition-colors"
+                >
+                  <Trash2 size={20} className="mr-2" />
+                  Clear All
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Filter Tabs */}
@@ -267,9 +299,26 @@ export default function NotificationsPage() {
                               Mark as Read
                             </button>
                           )}
+
+                          <button
+                            onClick={() => deleteNotification(notification.notificationId)}
+                            className="text-red-600 hover:text-red-800 font-semibold text-sm flex items-center"
+                          >
+                            <Trash2 size={14} className="mr-1" />
+                            Delete
+                          </button>
                         </div>
                       </div>
                     </div>
+
+                    {/* Delete button - top right corner */}
+                    <button
+                      onClick={() => deleteNotification(notification.notificationId)}
+                      className="flex-shrink-0 p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete notification"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </div>
               ))}
