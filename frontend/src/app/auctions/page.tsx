@@ -15,6 +15,7 @@ export default function AuctionsPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [auctions, setAuctions] = useState<any[]>([]);
   const [filteredAuctions, setFilteredAuctions] = useState<any[]>([]);
+  const [recentAuctions, setRecentAuctions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -64,6 +65,14 @@ export default function AuctionsPage() {
     try {
       const response = await auctionAPI.getAllAuctions();
       setAuctions(response.data);
+
+      // Get 8 most recent auctions sorted by creation date
+      const sorted = [...response.data].sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.startTime).getTime();
+        const dateB = new Date(b.createdAt || b.startTime).getTime();
+        return dateB - dateA; // Most recent first
+      });
+      setRecentAuctions(sorted.slice(0, 8));
     } catch (error) {
       console.error('Error fetching auctions:', error);
     } finally {
@@ -409,6 +418,19 @@ export default function AuctionsPage() {
               Create Auction
             </button>
           </div>
+
+          {/* Most Recent Auctions */}
+          {recentAuctions.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Most Recent Auctions</h2>
+                <span className="text-sm text-gray-500">Latest {recentAuctions.length} auctions</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {recentAuctions.map((auction) => renderAuctionWithActions(auction))}
+              </div>
+            </div>
+          )}
 
           {/* Search and Filters */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
