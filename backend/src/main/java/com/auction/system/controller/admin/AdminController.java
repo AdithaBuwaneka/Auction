@@ -1,7 +1,9 @@
 package com.auction.system.controller.admin;
 
 import com.auction.system.entity.User;
+import com.auction.system.entity.WalletTransaction;
 import com.auction.system.service.AdminService;
+import com.auction.system.service.WalletService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final WalletService walletService;
 
     /**
      * Get all users
@@ -65,5 +68,17 @@ public class AdminController {
         log.info("Admin: Get dashboard statistics");
         Map<String, Object> stats = adminService.getDashboardStats();
         return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Get all wallet transactions (Admin only)
+     * GET /api/admin/wallet/transactions
+     */
+    @GetMapping("/wallet/transactions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<WalletTransaction>> getAllWalletTransactions() {
+        log.info("Admin: Get all wallet transactions");
+        List<WalletTransaction> transactions = walletService.getAllWalletTransactions();
+        return ResponseEntity.ok(transactions);
     }
 }

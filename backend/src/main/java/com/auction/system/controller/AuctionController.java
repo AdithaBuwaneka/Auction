@@ -161,18 +161,55 @@ public class AuctionController {
      * PUT /api/auctions/{id}
      */
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateAuction(@PathVariable Long id, @RequestBody Auction auction) {
-        log.info("REST API: Update auction - {}", id);
+    public ResponseEntity<?> updateAuction(@PathVariable Long id, @RequestBody java.util.Map<String, Object> updates) {
+        log.info("REST API: Update auction - {} with data: {}", id, updates);
         try {
+            // Create auction object with updates
+            Auction auction = new Auction();
+
+            // Apply updates from the map
+            if (updates.containsKey("itemName") && updates.get("itemName") != null) {
+                auction.setItemName((String) updates.get("itemName"));
+            }
+            if (updates.containsKey("description")) {
+                auction.setDescription((String) updates.get("description"));
+            }
+            if (updates.containsKey("imageUrl")) {
+                auction.setImageUrl((String) updates.get("imageUrl"));
+            }
+            if (updates.containsKey("startingPrice") && updates.get("startingPrice") != null) {
+                Object price = updates.get("startingPrice");
+                if (price instanceof Number) {
+                    auction.setStartingPrice(BigDecimal.valueOf(((Number) price).doubleValue()));
+                }
+            }
+            if (updates.containsKey("startTime") && updates.get("startTime") != null) {
+                String startTimeStr = (String) updates.get("startTime");
+                auction.setStartTime(LocalDateTime.parse(startTimeStr, DateTimeFormatter.ISO_DATE_TIME));
+            }
+            if (updates.containsKey("mandatoryEndTime") && updates.get("mandatoryEndTime") != null) {
+                String endTimeStr = (String) updates.get("mandatoryEndTime");
+                auction.setMandatoryEndTime(LocalDateTime.parse(endTimeStr, DateTimeFormatter.ISO_DATE_TIME));
+            }
+            if (updates.containsKey("bidGapDurationSeconds") && updates.get("bidGapDurationSeconds") != null) {
+                Object seconds = updates.get("bidGapDurationSeconds");
+                if (seconds instanceof Number) {
+                    auction.setBidGapDuration(Duration.ofSeconds(((Number) seconds).longValue()));
+                } else if (seconds instanceof String) {
+                    auction.setBidGapDuration(Duration.ofSeconds(Long.parseLong((String) seconds)));
+                }
+            }
+
             Auction updated = auctionService.updateAuction(id, auction);
             return ResponseEntity.ok(updated);
         } catch (IllegalStateException e) {
+            log.error("Validation error updating auction {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(java.util.Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            log.error("Error updating auction", e);
+            log.error("Error updating auction {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(java.util.Map.of("error", "Failed to update auction"));
+                    .body(java.util.Map.of("error", "Failed to update auction: " + e.getMessage()));
         }
     }
 

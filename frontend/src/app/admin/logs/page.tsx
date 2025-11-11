@@ -1,33 +1,104 @@
 'use client';
 
-import React, { useState } from 'react';
-import { FileText, AlertCircle, Info, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { adminAPI } from '@/lib/api';
+import { FileText, AlertCircle, Info, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 export default function LogsPage() {
-  const [selectedType, setSelectedType] = useState<'all' | 'tcp' | 'ssl' | 'multicast' | 'nio'>('all');
+  const [selectedType, setSelectedType] = useState<'all' | 'transaction' | 'auction' | 'wallet'>('all');
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample logs - replace with real API data
-  const logs = [
-    { id: 1, type: 'tcp', level: 'info', message: 'TCP connection established from 192.168.1.100', timestamp: new Date() },
-    { id: 2, type: 'ssl', level: 'success', message: 'SSL handshake completed successfully', timestamp: new Date() },
-    { id: 3, type: 'multicast', level: 'info', message: 'Multicast message broadcast to group 230.0.0.1', timestamp: new Date() },
-    { id: 4, type: 'nio', level: 'warning', message: 'High channel utilization detected', timestamp: new Date() },
-    { id: 5, type: 'tcp', level: 'error', message: 'Connection timeout for client 192.168.1.105', timestamp: new Date() },
-  ];
+  useEffect(() => {
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 10000); // Refresh every 10s
+    return () => clearInterval(interval);
+  }, [selectedType]);
+
+  const fetchLogs = async () => {
+    try {
+      // Fetch real data from transactions and auctions
+      const [transactionsRes, auctionsRes, walletRes] = await Promise.all([
+        adminAPI.getAllTransactions().catch(() => ({ data: [] })),
+        adminAPI.getAllAuctions().catch(() => ({ data: [] })),
+        adminAPI.getAllWalletTransactions().catch(() => ({ data: [] })),
+      ]);
+
+      const transactions = transactionsRes.data || [];
+      const auctions = auctionsRes.data || [];
+      const walletTxs = walletRes.data || [];
+
+      // Convert to log format
+      const generatedLogs: any[] = [];
+
+      // Transaction logs
+      transactions.slice(0, 30).forEach((t: any) => {
+        generatedLogs.push({
+          id: `txn-${t.transactionId}`,
+          type: 'transaction',
+          level: t.status === 'COMPLETED' ? 'success' : t.status === 'FAILED' ? 'error' : 'info',
+          message: `Transaction #${t.transactionId}: ${t.buyer?.username} → ${t.seller?.username} - $${t.amount}`,
+          timestamp: new Date(t.transactionTime)
+        });
+      });
+
+      // Auction logs
+      auctions.slice(0, 30).forEach((a: any) => {
+        generatedLogs.push({
+          id: `auction-${a.auctionId}`,
+          type: 'auction',
+          level: a.status === 'ACTIVE' ? 'info' : a.status === 'ENDED' ? 'success' : 'warning',
+          message: `Auction #${a.auctionId}: ${a.itemName} - ${a.status}`,
+          timestamp: new Date(a.createdAt)
+        });
+      });
+
+      // Wallet logs (recent)
+      walletTxs.slice(0, 20).forEach((w: any) => {
+        generatedLogs.push({
+          id: `wallet-${w.walletTransactionId}`,
+          type: 'wallet',
+          level: w.transactionType.includes('PAYMENT') ? 'success' : 'info',
+          message: `Wallet #${w.walletTransactionId}: User ${w.userId} - ${w.transactionType} $${w.amount}`,
+          timestamp: new Date(w.createdAt)
+        });
+      });
+
+      // Sort by timestamp
+      generatedLogs.sort((a, b) => b.timestamp - a.timestamp);
+
+      setLogs(generatedLogs);
+    } catch (error) {
+      console.warn('Failed to fetch logs');
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredLogs = selectedType === 'all' ? logs : logs.filter(log => log.type === selectedType);
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">System Logs</h1>
-        <p className="text-gray-600 mt-1">View and monitor system activity logs</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">System Logs</h1>
+          <p className="text-gray-600 mt-1">View and monitor system activity logs</p>
+        </div>
+        <button
+          onClick={fetchLogs}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+        >
+          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+          Refresh
+        </button>
       </div>
 
       {/* Filter Buttons */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <div className="flex gap-2">
-          {['all', 'tcp', 'ssl', 'multicast', 'nio'].map((type) => (
+          {['all', 'transaction', 'auction', 'wallet'].map((type) => (
             <button
               key={type}
               onClick={() => setSelectedType(type as any)}
@@ -45,11 +116,21 @@ export default function LogsPage() {
 
       {/* Logs List */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="divide-y divide-gray-200">
-          {filteredLogs.map((log) => (
-            <LogEntry key={log.id} log={log} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="p-12 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : filteredLogs.length > 0 ? (
+          <div className="divide-y divide-gray-200">
+            {filteredLogs.map((log, index) => (
+              <LogEntry key={log.id || index} log={log} />
+            ))}
+          </div>
+        ) : (
+          <div className="p-12 text-center text-gray-500">
+            No logs available
+          </div>
+        )}
       </div>
     </div>
   );
