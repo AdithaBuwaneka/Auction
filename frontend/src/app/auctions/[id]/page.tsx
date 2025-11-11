@@ -48,7 +48,7 @@ interface Bid {
 export default function AuctionDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [auction, setAuction] = useState<Auction | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +60,9 @@ export default function AuctionDetailPage() {
   const auctionId = params.id as string;
 
   useEffect(() => {
+    // Wait for auth to load before redirecting
+    if (authLoading) return;
+
     if (!user) {
       router.push('/login');
       return;
@@ -74,7 +77,7 @@ export default function AuctionDetailPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [auctionId, user]);
+  }, [auctionId, user, authLoading]);
 
   const fetchAuctionDetails = async () => {
     try {
@@ -164,7 +167,7 @@ export default function AuctionDetailPage() {
     return colors[status] || 'text-gray-600';
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" text="Loading auction details..." />

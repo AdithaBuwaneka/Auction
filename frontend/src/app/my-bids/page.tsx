@@ -32,7 +32,7 @@ interface Bid {
 
 export default function MyBidsPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -44,6 +44,9 @@ export default function MyBidsPage() {
   });
 
   useEffect(() => {
+    // Wait for auth to load before redirecting
+    if (authLoading) return;
+
     if (!user) {
       router.push('/login');
       return;
@@ -53,7 +56,7 @@ export default function MyBidsPage() {
     // Poll for updates every 5 seconds
     const interval = setInterval(fetchMyBids, 5000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchMyBids = async () => {
     if (!user) return;
@@ -104,7 +107,7 @@ export default function MyBidsPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner size="lg" text="Loading your bids..." />

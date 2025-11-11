@@ -163,12 +163,7 @@ public class AuctionService {
         Auction existingAuction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new RuntimeException("Auction not found"));
 
-        // Only allow update if auction hasn't started or has no bids
-        if (existingAuction.getStatus() == Auction.AuctionStatus.ACTIVE) {
-            throw new IllegalStateException("Cannot update active auction with bids");
-        }
-
-        // Update allowed fields
+        // Update all basic fields
         if (updatedAuction.getItemName() != null) {
             existingAuction.setItemName(updatedAuction.getItemName());
         }
@@ -180,7 +175,69 @@ public class AuctionService {
         }
         if (updatedAuction.getStartingPrice() != null) {
             existingAuction.setStartingPrice(updatedAuction.getStartingPrice());
-            existingAuction.setCurrentPrice(updatedAuction.getStartingPrice());
+            // Only update current price if no bids have been placed
+            long bidCount = bidRepository.countByAuction(existingAuction);
+            if (bidCount == 0) {
+                existingAuction.setCurrentPrice(updatedAuction.getStartingPrice());
+            }
+        }
+
+        // Update time-related fields (allow for all statuses except ENDED)
+        if (existingAuction.getStatus() != Auction.AuctionStatus.ENDED) {
+            // Temporarily store updated times for validation
+            LocalDateTime newStartTime = updatedAuction.getStartTime() != null ?
+                updatedAuction.getStartTime() : existingAuction.getStartTime();
+            LocalDateTime newEndTime = updatedAuction.getMandatoryEndTime() != null ?
+                updatedAuction.getMandatoryEndTime() : existingAuction.getMandatoryEndTime();
+
+            // Validate time relationships
+            if (newEndTime != null && newStartTime != null) {
+                if (newEndTime.isBefore(newStartTime) || newEndTime.isEqual(newStartTime)) {
+                    throw new IllegalStateException("End time must be after start time");
+                }
+
+                // Check if end time is in the future
+                if (newEndTime.isBefore(LocalDateTime.now())) {
+                    throw new IllegalStateException("End time must be in the future");
+                }
+
+                // Ensure minimum duration (at least 1 minute)
+                if (java.time.Duration.between(newStartTime, newEndTime).toMinutes() < 1) {
+                    throw new IllegalStateException("Auction duration must be at least 1 minute");
+                }
+            }
+
+            // Apply updates after validation
+            if (updatedAuction.getStartTime() != null) {
+                existingAuction.setStartTime(updatedAuction.getStartTime());
+            }
+            if (updatedAuction.getMandatoryEndTime() != null) {
+                existingAuction.setMandatoryEndTime(updatedAuction.getMandatoryEndTime());
+
+                // Update current deadline intelligently
+                long bidCount = bidRepository.countByAuction(existingAuction);
+                if (bidCount == 0) {
+                    // No bids yet - set deadline to mandatory end time
+                    existingAuction.setCurrentDeadline(updatedAuction.getMandatoryEndTime());
+                } else {
+                    // Has bids - only update if new end time is earlier than current deadline
+                    if (existingAuction.getCurrentDeadline() == null ||
+                        updatedAuction.getMandatoryEndTime().isBefore(existingAuction.getCurrentDeadline())) {
+                        existingAuction.setCurrentDeadline(updatedAuction.getMandatoryEndTime());
+                    }
+                }
+            }
+            if (updatedAuction.getBidGapDuration() != null) {
+                // Validate bid gap duration (minimum 30 seconds, maximum 10 minutes)
+                long seconds = updatedAuction.getBidGapDuration().getSeconds();
+                if (seconds < 30) {
+                    throw new IllegalStateException("Bid gap duration must be at least 30 seconds");
+                }
+                if (seconds > 86400) {
+                    throw new IllegalStateException("Bid gap duration must not exceed 24 hours");
+                }
+                existingAuction.setBidGapDuration(updatedAuction.getBidGapDuration());
+            }
         }
 
         return auctionRepository.save(existingAuction);
@@ -188,18 +245,14 @@ public class AuctionService {
 
     /**
      * Delete auction
+     * Allows deletion of any auction by the owner
      */
     @Transactional
     public void deleteAuction(Long auctionId) {
         Auction auction = auctionRepository.findById(auctionId)
                 .orElseThrow(() -> new RuntimeException("Auction not found"));
 
-        // Only allow delete if no bids placed
-        if (auction.getStatus() == Auction.AuctionStatus.ACTIVE ||
-            auction.getStatus() == Auction.AuctionStatus.ENDING_SOON) {
-            throw new IllegalStateException("Cannot delete auction with active status");
-        }
-
+        // Allow deletion of any auction - owner can delete at any time
         auctionRepository.delete(auction);
     }
 
