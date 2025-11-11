@@ -226,28 +226,31 @@ export default function TransactionsPage() {
         <>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-fixed">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="w-16 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="w-40 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Auction
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="w-28 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Buyer
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="w-28 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Seller
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="w-24 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="w-24 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      Fee (20%)
+                    </th>
+                    <th className="w-24 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="w-36 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Date
                     </th>
                   </tr>
@@ -255,29 +258,34 @@ export default function TransactionsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredTransactions.map((transaction) => (
                     <tr key={transaction.transactionId} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 text-xs text-gray-900">
                         #{transaction.transactionId}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                      <td className="px-3 py-3">
+                        <div className="text-xs font-medium text-gray-900 truncate">
                           {transaction.auction?.itemName || 'N/A'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{transaction.buyer?.username}</div>
+                      <td className="px-3 py-3">
+                        <div className="text-xs text-gray-900 truncate">{transaction.buyer?.username}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{transaction.seller?.username}</div>
+                      <td className="px-3 py-3">
+                        <div className="text-xs text-gray-900 truncate">{transaction.seller?.username}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-gray-900">
+                      <td className="px-3 py-3">
+                        <div className="text-xs font-bold text-gray-900">
                           ${transaction.amount?.toLocaleString()}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3">
+                        <div className="text-xs font-bold text-purple-600">
+                          ${(transaction.amount * 0.20)?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
                         <StatusBadge status={transaction.status} />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-3 text-xs text-gray-500">
                         {new Date(transaction.transactionTime).toLocaleString()}
                       </td>
                     </tr>

@@ -73,6 +73,40 @@ public class NotificationController {
         }
     }
 
+    /**
+     * Delete a notification
+     * DELETE /api/notifications/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteNotification(@PathVariable Long id) {
+        log.info("REST API: Delete notification - {}", id);
+        try {
+            notificationService.deleteNotification(id);
+            return ResponseEntity.ok(Map.of("message", "Notification deleted successfully"));
+        } catch (Exception e) {
+            log.error("Error deleting notification", e);
+            return ResponseEntity.status(404)
+                    .body(Map.of("error", "Notification not found"));
+        }
+    }
+
+    /**
+     * Clear all notifications for a user
+     * DELETE /api/notifications/user/{userId}/clear
+     */
+    @DeleteMapping("/user/{userId}/clear")
+    public ResponseEntity<?> clearAllNotifications(@PathVariable Long userId) {
+        log.info("REST API: Clear all notifications for user - {}", userId);
+        try {
+            notificationService.clearAllNotifications(userId);
+            return ResponseEntity.ok(Map.of("message", "All notifications cleared successfully"));
+        } catch (Exception e) {
+            log.error("Error clearing notifications", e);
+            return ResponseEntity.status(500)
+                    .body(Map.of("error", "Failed to clear notifications"));
+        }
+    }
+
     // Helper method to extract user ID from JWT token
     private Long extractUserIdFromToken(String token) {
         if (token != null && token.startsWith("Bearer ")) {
