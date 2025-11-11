@@ -62,8 +62,8 @@ export default function AuctionsPage() {
   const sortedAuctions = [...filteredAuctions].sort((a, b) => {
     if (sortView === 'recent') {
       // Sort by creation date (most recent first)
-      const dateA = new Date(a.createdAt || a.startTime).getTime();
-      const dateB = new Date(b.createdAt || b.startTime).getTime();
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA;
     }
     // Default: show all without specific sorting
