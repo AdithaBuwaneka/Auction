@@ -110,11 +110,12 @@ export default function ProfilePage() {
     setSuccess('');
 
     try {
-      // Update profile via API
-      await userAPI.updateProfile({
-        username: editForm.username,
-        email: editForm.email,
-      });
+      // Update profile via API - use user ID from context
+      if (!user) throw new Error('User not available');
+      const payload = { username: editForm.username, email: editForm.email };
+      console.debug('Updating profile for user', user.userId, payload);
+      const response = await userAPI.updateProfile(user.userId, payload);
+      console.debug('Update profile response:', response?.data);
 
       // Update local state
       setProfileData({
@@ -138,7 +139,9 @@ export default function ProfilePage() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      setError(error.response?.data?.error || 'Failed to update profile');
+      // Try to extract error message from various possible shapes
+      const message = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to update profile';
+      setError(message);
     } finally {
       setSaving(false);
     }

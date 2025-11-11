@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { auctionAPI, bidAPI } from '@/lib/api';
+import { auctionAPI, bidAPI, walletAPI } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -127,7 +127,26 @@ export default function AuctionDetailPage() {
     setSuccess('');
 
     try {
-      await bidAPI.placeBid(auction.auctionId, user.userId, amount);
+      // Check wallet available balance first to provide immediate user feedback
+      try {
+        const balResp = await walletAPI.getBalance(user.userId);
+        const available = parseFloat(balResp.data.availableBalance || balResp.data.available || 0);
+        console.debug('User available balance:', available);
+        if (available < amount) {
+          // Show a friendly message and abort placing the bid without throwing an exception
+          setError(`Insufficient available balance. You have $${available} but need $${amount}`);
+          setBidding(false);
+          return;
+        }
+      } catch (balErr: any) {
+        // If fetching balance fails, log and continue to let backend handle it
+        console.warn('Could not fetch wallet balance; proceeding with bid. Error:', balErr?.response?.data || balErr.message || balErr);
+      }
+
+      const payload = { auctionId: auction.auctionId, bidderId: user.userId, bidAmount: amount };
+      console.debug('Placing bid with payload:', payload);
+      const response = await bidAPI.placeBid(auction.auctionId, user.userId, amount);
+      console.debug('Place bid response:', response?.data);
       setSuccess('Bid placed successfully!');
       setBidAmount('');
 
@@ -139,7 +158,8 @@ export default function AuctionDetailPage() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
       console.error('Error placing bid:', error);
-      setError(error.response?.data?.error || 'Failed to place bid. Please try again.');
+      const message = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to place bid. Please try again.';
+      setError(message);
     } finally {
       setBidding(false);
     }
