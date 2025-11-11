@@ -93,7 +93,10 @@ export const adminAPI = {
 // User API
 export const userAPI = {
   getCurrentUser: () => api.get('/users/me'),
-  updateProfile: (data: any) => api.put('/users/me', data),
+  // Update profile for a specific user ID. Pass the authenticated user's id from the frontend (user.userId)
+  updateProfile: (userId: number, data: any) => api.put(`/users/${userId}`, data),
+  // Backwards-compatible alias (calls /users/me) - kept for any code that uses it without id
+  updateProfileMe: (data: any) => api.put('/users/me', data),
   getUserById: (id: number) => api.get(`/users/${id}`),
 };
 
