@@ -7,9 +7,10 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import AuctionCard from '@/components/AuctionCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { auctionAPI, bidAPI, walletAPI, notificationAPI } from '@/lib/api';
+import { auctionAPI, bidAPI, walletAPI, notificationAPI, transactionAPI } from '@/lib/api';
 import { Gavel, TrendingUp, DollarSign, Trophy, Bell, Clock, Package, Plus, ArrowRight, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export default function UserDashboard() {
   const { user, isLoading } = useAuth();
@@ -20,6 +21,9 @@ export default function UserDashboard() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [wallet, setWallet] = useState({ balance: 0, frozenBalance: 0 });
   const [loading, setLoading] = useState(true);
+  const [biddingActivity, setBiddingActivity] = useState<any[]>([]);
+  const [spendingData, setSpendingData] = useState<any[]>([]);
+  const [bidStatusData, setBidStatusData] = useState<any[]>([]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -47,16 +51,75 @@ export default function UserDashboard() {
         notificationAPI.getUserNotifications(user.userId).catch(() => ({ data: [] })),
       ]);
 
-      setActiveAuctions(auctionsRes.data.slice(0, 8)); // Show top 8 active auctions
+      setActiveAuctions(auctionsRes.data.slice(0, 8));
       setMyBids(bidsRes.data);
       setMyAuctions(myAuctionsRes.data);
       setWallet(walletRes.data);
-      setNotifications(notificationsRes.data.slice(0, 5)); // Show latest 5 notifications
+      setNotifications(notificationsRes.data.slice(0, 5));
+
+      // Calculate bidding activity (last 7 days)
+      const biddingByDay = calculateBiddingActivity(bidsRes.data);
+      setBiddingActivity(biddingByDay);
+
+      // Calculate spending trend
+      const spending = calculateSpendingData(bidsRes.data);
+      setSpendingData(spending);
+
+      // Calculate bid status distribution
+      const bidStatus = calculateBidStatus(bidsRes.data);
+      setBidStatusData(bidStatus);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateBiddingActivity = (bids: any[]) => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const activity = days.map(day => ({ day, bids: 0, amount: 0 }));
+
+    bids.forEach((bid: any) => {
+      const date = new Date(bid.bidTime);
+      const dayIndex = (date.getDay() + 6) % 7; // Convert to Mon=0, Sun=6
+      if (activity[dayIndex]) {
+        activity[dayIndex].bids++;
+        activity[dayIndex].amount += bid.bidAmount;
+      }
+    });
+
+    return activity;
+  };
+
+  const calculateSpendingData = (bids: any[]) => {
+    const monthlySpending: any = {};
+    bids.forEach((bid: any) => {
+      const date = new Date(bid.bidTime);
+      const month = date.toLocaleString('default', { month: 'short' });
+      if (!monthlySpending[month]) {
+        monthlySpending[month] = 0;
+      }
+      monthlySpending[month] += bid.bidAmount;
+    });
+
+    return Object.keys(monthlySpending).map(month => ({
+      month,
+      spending: monthlySpending[month]
+    }));
+  };
+
+  const calculateBidStatus = (bids: any[]) => {
+    const statusCount: any = { WINNING: 0, OUTBID: 0, WON: 0, LOST: 0 };
+    bids.forEach((bid: any) => {
+      if (bid.status && statusCount.hasOwnProperty(bid.status)) {
+        statusCount[bid.status]++;
+      }
+    });
+
+    return Object.keys(statusCount).map(status => ({
+      name: status,
+      value: statusCount[status]
+    })).filter(item => item.value > 0);
   };
 
   if (isLoading || loading) {
@@ -160,144 +223,108 @@ export default function UserDashboard() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Active Auctions */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Winning Bids Section */}
-              {winningBids > 0 && (
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                      <TrendingUp className="mr-2 text-green-600" />
-                      You're Winning! ({winningBids})
-                    </h2>
-                    <Link href="/my-bids">
-                      <button className="text-blue-600 hover:text-blue-700 font-semibold text-sm flex items-center">
-                        View All
-                        <ArrowRight size={16} className="ml-1" />
-                      </button>
-                    </Link>
-                  </div>
-                  <div className="p-6">
-                    <div className="space-y-3">
-                      {myBids
-                        .filter((b: any) => b.status === 'WINNING')
-                        .slice(0, 3)
-                        .map((bid: any) => (
-                          <Link key={bid.bidId} href={`/auctions/${bid.auction.auctionId}`}>
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h3 className="font-bold text-gray-900">{bid.auction.itemName}</h3>
-                                  <p className="text-sm text-gray-600">Your bid: ${bid.bidAmount.toLocaleString()}</p>
-                                </div>
-                                <Trophy className="text-green-600" size={24} />
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
-                    </div>
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Bidding Activity Chart */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                <TrendingUp className="mr-2 text-blue-600" size={20} />
+                Weekly Bidding Activity
+              </h3>
+              {biddingActivity.length > 0 && biddingActivity.some(d => d.bids > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={biddingActivity}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="bids" fill="#3b82f6" name="Number of Bids" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <Gavel className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                    <p>No bidding activity yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Start bidding to see your activity</p>
                   </div>
                 </div>
               )}
-
-              {/* Active Auctions */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                    <Gavel className="mr-2 text-blue-600" />
-                    Active Auctions
-                  </h2>
-                  <Link href="/auctions">
-                    <button className="text-blue-600 hover:text-blue-700 font-semibold text-sm flex items-center">
-                      View All
-                      <ArrowRight size={16} className="ml-1" />
-                    </button>
-                  </Link>
-                </div>
-
-                <div className="p-6">
-                  {activeAuctions.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Gavel className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                      <p className="text-gray-500 text-lg mb-2">No active auctions</p>
-                      <p className="text-gray-400 text-sm">Check back later for new items</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {activeAuctions.map((auction) => (
-                        <AuctionCard key={auction.auctionId} auction={auction} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
-            {/* Right Column - Notifications & Activity */}
-            <div className="space-y-6">
-              {/* Notifications */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                    <Bell className="mr-2 text-blue-600" size={20} />
-                    Notifications
-                    {unreadNotifications > 0 && (
-                      <span className="ml-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                        {unreadNotifications}
-                      </span>
-                    )}
-                  </h3>
-                  <Link href="/notifications">
-                    <button className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
-                      View All
-                    </button>
-                  </Link>
+            {/* Spending Trend Chart */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                <DollarSign className="mr-2 text-green-600" size={20} />
+                Monthly Spending Trend
+              </h3>
+              {spendingData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={spendingData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="spending" stroke="#10b981" strokeWidth={3} name="Total Spending ($)" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <DollarSign className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                    <p>No spending data yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Place bids to track your spending</p>
+                  </div>
                 </div>
+              )}
+            </div>
+          </div>
 
-                <div className="divide-y divide-gray-100">
-                  {notifications.length === 0 ? (
-                    <div className="p-6 text-center">
-                      <Bell className="mx-auto h-12 w-12 text-gray-300 mb-2" />
-                      <p className="text-gray-500 text-sm">No notifications</p>
-                    </div>
-                  ) : (
-                    notifications.slice(0, 5).map((notification) => (
-                      <Link key={notification.notificationId} href="/notifications">
-                        <div className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                          !notification.isRead ? 'bg-blue-50' : ''
-                        }`}>
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 mt-0.5">
-                              {notification.type === 'OUTBID' && <AlertCircle className="text-orange-600" size={16} />}
-                              {notification.type === 'AUCTION_WON' && <Trophy className="text-green-600" size={16} />}
-                              {notification.type === 'BID_PLACED' && <TrendingUp className="text-blue-600" size={16} />}
-                              {!['OUTBID', 'AUCTION_WON', 'BID_PLACED'].includes(notification.type) && (
-                                <Bell className="text-gray-600" size={16} />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-gray-900 truncate">
-                                {notification.title}
-                              </p>
-                              <p className="text-xs text-gray-600 line-clamp-2">
-                                {notification.message}
-                              </p>
-                            </div>
-                            {!notification.isRead && (
-                              <div className="flex-shrink-0">
-                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                  )}
+          {/* Bid Status Distribution & Quick Stats */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Bid Status Pie Chart */}
+            <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                <Trophy className="mr-2 text-purple-600" size={20} />
+                Bid Status Distribution
+              </h3>
+              {bidStatusData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={bidStatusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(entry: any) => `${entry.name}: ${entry.value}`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {bidStatusData.map((entry, index) => {
+                        const COLORS: any = { WINNING: '#10b981', WON: '#3b82f6', OUTBID: '#f59e0b', LOST: '#ef4444' };
+                        return <Cell key={`cell-${index}`} fill={COLORS[entry.name] || '#6b7280'} />;
+                      })}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <Trophy className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                    <p>No bid data yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Start bidding to see your performance</p>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Quick Stats */}
+            {/* Quick Stats */}
+            <div className="space-y-4">
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Stats</h3>
                 <div className="space-y-3">
@@ -322,14 +349,14 @@ export default function UserDashboard() {
                 </div>
               </div>
 
-              {/* Tips */}
+              {/* Pro Tip */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                   <div>
                     <h4 className="font-semibold text-blue-900 mb-1">Pro Tip</h4>
                     <p className="text-sm text-blue-800">
-                      Keep an eye on auctions ending soon! You can find them in the Browse Auctions page with the "Ending Soon" filter.
+                      Track your bidding patterns to improve your success rate!
                     </p>
                   </div>
                 </div>

@@ -26,6 +26,7 @@ public class AuctionService {
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
     private final com.auction.system.repository.BidRepository bidRepository;
+    private final WalletService walletService;
 
     /**
      * Create a new auction
@@ -269,6 +270,20 @@ public class AuctionService {
         if (highestBid.isPresent()) {
             auction.setWinner(highestBid.get().getBidder());
             log.info("Winner set for auction {}: User {}", auction.getAuctionId(), highestBid.get().getBidder().getUserId());
+
+            // Process payment: 20% admin fee, 80% to seller
+            java.util.Map<String, com.auction.system.entity.WalletTransaction> transactions =
+                walletService.processAuctionPayment(
+                    highestBid.get().getBidder().getUserId(),
+                    auction.getSeller().getUserId(),
+                    auction.getCurrentPrice(),
+                    auction
+                );
+            log.info("Auction {} payment processed successfully. Buyer: {}, Seller: {}, Amount: ${}",
+                auctionId,
+                highestBid.get().getBidder().getUserId(),
+                auction.getSeller().getUserId(),
+                auction.getCurrentPrice());
         } else {
             log.info("No bids found for auction {}, no winner set", auction.getAuctionId());
         }

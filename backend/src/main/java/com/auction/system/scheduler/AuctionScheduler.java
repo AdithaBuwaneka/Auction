@@ -106,23 +106,20 @@ public class AuctionScheduler {
             return;
         }
 
-        // Process winner payment
+        // Process winner payment with 20% admin fee and 80% to seller
         try {
-            // Deduct frozen amount from winner
-            walletService.deductFrozenAmount(
+            java.util.Map<String, com.auction.system.entity.WalletTransaction> transactions =
+                walletService.processAuctionPayment(
                     winningBid.getBidder().getUserId(),
-                    winningBid.getBidAmount(),
-                    "Payment for winning auction: " + auction.getItemName(),
-                    auction.getAuctionId(),
-                    winningBid.getBidId()
-            );
-
-            // Add money to seller (minus platform fee if applicable)
-            walletService.deposit(
                     auction.getSeller().getUserId(),
                     winningBid.getBidAmount(),
-                    "Payment received from auction: " + auction.getItemName()
-            );
+                    auction
+                );
+
+            log.info("Payment processed: Buyer paid ${}, Seller received ${} (80%), Admin received ${} (20%)",
+                    winningBid.getBidAmount(),
+                    winningBid.getBidAmount().multiply(java.math.BigDecimal.valueOf(0.80)),
+                    winningBid.getBidAmount().multiply(java.math.BigDecimal.valueOf(0.20)));
 
             // Update auction status
             auction.setStatus(Auction.AuctionStatus.ENDED);

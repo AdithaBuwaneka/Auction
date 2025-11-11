@@ -3,27 +3,96 @@
 import React, { useEffect, useState } from 'react';
 import { adminAPI } from '@/lib/api';
 import { Transaction } from '@/lib/types';
-import { Search, DollarSign, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
+import { Search, DollarSign, CheckCircle, XCircle, Clock, Download, Receipt, Wallet } from 'lucide-react';
 
 export default function TransactionsPage() {
+  const [activeTab, setActiveTab] = useState<'auction' | 'wallet'>('auction');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [walletTransactions, setWalletTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
 
   useEffect(() => {
-    fetchTransactions();
+    fetchAllData();
   }, []);
 
-  const fetchTransactions = async () => {
+  const fetchAllData = async () => {
     try {
-      const response = await adminAPI.getAllTransactions();
-      setTransactions(response.data);
+      const [transactionsRes, walletRes] = await Promise.all([
+        adminAPI.getAllTransactions().catch((err) => {
+          console.error('Failed to fetch auction transactions:', err);
+          return { data: [] };
+        }),
+        adminAPI.getAllWalletTransactions().catch((err) => {
+          console.error('Failed to fetch wallet transactions:', err);
+          return { data: [] };
+        }),
+      ]);
+      setTransactions(transactionsRes.data || []);
+      setWalletTransactions(walletRes.data || []);
+      console.log('Fetched transactions:', transactionsRes.data?.length || 0);
+      console.log('Fetched wallet transactions:', walletRes.data?.length || 0);
     } catch (error) {
-      console.warn('Failed to fetch transactions - API may not be available');
+      console.error('Failed to fetch transactions:', error);
       setTransactions([]);
+      setWalletTransactions([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    if (activeTab === 'auction') {
+      // Export Auction Payments
+      const csvHeaders = ['ID', 'Auction', 'Buyer', 'Seller', 'Amount', 'Status', 'Date'];
+      const csvRows = filteredTransactions.map(t => [
+        t.transactionId,
+        t.auction?.itemName || 'N/A',
+        t.buyer?.username || 'N/A',
+        t.seller?.username || 'N/A',
+        t.amount,
+        t.status,
+        new Date(t.transactionTime).toLocaleString()
+      ]);
+
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `auction-payments-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } else {
+      // Export Wallet Transactions
+      const csvHeaders = ['ID', 'User ID', 'Type', 'Amount', 'Balance After', 'Description', 'Date'];
+      const csvRows = walletTransactions.map(wt => [
+        wt.walletTransactionId,
+        wt.userId,
+        wt.transactionType,
+        wt.amount,
+        wt.balanceAfter,
+        wt.description || '',
+        new Date(wt.createdAt).toLocaleString()
+      ]);
+
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wallet-transactions-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
     }
   };
 
@@ -36,9 +105,10 @@ export default function TransactionsPage() {
     return matchesSearch && matchesFilter;
   });
 
+  // Platform revenue = 20% of all completed transactions
   const totalRevenue = transactions
     .filter(t => t.status === 'COMPLETED')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + (t.amount * 0.20), 0);
 
   if (loading) {
     return (
@@ -55,10 +125,41 @@ export default function TransactionsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Transaction Management</h1>
           <p className="text-gray-600 mt-1">Monitor all platform transactions</p>
         </div>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+        <button
+          onClick={exportToCSV}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
           <Download size={18} />
-          Export Report
+          Export {activeTab === 'auction' ? 'Auction Payments' : 'Wallet Transactions'}
         </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('auction')}
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+              activeTab === 'auction'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Receipt size={20} />
+            Auction Payments ({transactions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('wallet')}
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+              activeTab === 'wallet'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Wallet size={20} />
+            Wallet Transactions ({walletTransactions.length})
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -70,7 +171,7 @@ export default function TransactionsPage() {
           color="blue"
         />
         <StatCard
-          title="Total Revenue"
+          title="Platform Revenue (20%)"
           value={`$${totalRevenue.toLocaleString()}`}
           icon={<DollarSign size={24} />}
           color="green"
@@ -120,73 +221,152 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Transactions Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Auction
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Buyer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Seller
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTransactions.map((transaction) => (
-                <tr key={transaction.transactionId} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    #{transaction.transactionId}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {transaction.auction?.itemName || 'N/A'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{transaction.buyer?.username}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{transaction.seller?.username}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-gray-900">
-                      ${transaction.amount?.toLocaleString()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={transaction.status} />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(transaction.transactionTime).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Auction Payments Table */}
+      {activeTab === 'auction' && (
+        <>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Auction
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Buyer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Seller
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredTransactions.map((transaction) => (
+                    <tr key={transaction.transactionId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        #{transaction.transactionId}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {transaction.auction?.itemName || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{transaction.buyer?.username}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{transaction.seller?.username}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-gray-900">
+                          ${transaction.amount?.toLocaleString()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={transaction.status} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(transaction.transactionTime).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-      {filteredTransactions.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          No transactions found matching your criteria
+          {filteredTransactions.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              No transactions found matching your criteria
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Wallet Transactions Table */}
+      {activeTab === 'wallet' && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="w-16 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    ID
+                  </th>
+                  <th className="w-20 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    User
+                  </th>
+                  <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Type
+                  </th>
+                  <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Amount
+                  </th>
+                  <th className="w-28 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Balance
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Description
+                  </th>
+                  <th className="w-36 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {walletTransactions.map((wt: any) => (
+                  <tr key={wt.walletTransactionId} className="hover:bg-gray-50">
+                    <td className="px-3 py-3 text-xs text-gray-900">
+                      #{wt.walletTransactionId}
+                    </td>
+                    <td className="px-3 py-3 text-xs text-gray-900">
+                      #{wt.userId}
+                    </td>
+                    <td className="px-3 py-3">
+                      <WalletTransactionTypeBadge type={wt.transactionType} />
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className={`text-xs font-bold ${
+                        wt.transactionType === 'BUYER_PAYMENT' || wt.transactionType === 'DEDUCT' || wt.transactionType === 'WITHDRAW' || wt.transactionType === 'FREEZE'
+                          ? 'text-red-600'
+                          : 'text-green-600'
+                      }`}>
+                        {wt.transactionType === 'BUYER_PAYMENT' || wt.transactionType === 'DEDUCT' || wt.transactionType === 'WITHDRAW' || wt.transactionType === 'FREEZE' ? '-' : '+'}
+                        ${wt.amount?.toLocaleString()}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-xs text-gray-900">
+                      ${wt.balanceAfter?.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-3 text-xs text-gray-600 truncate" title={wt.description}>
+                      {wt.description}
+                    </td>
+                    <td className="px-3 py-3 text-xs text-gray-500">
+                      {new Date(wt.createdAt).toLocaleDateString()}<br/>
+                      <span className="text-gray-400">{new Date(wt.createdAt).toLocaleTimeString()}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {walletTransactions.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              No wallet transactions found
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -229,6 +409,29 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full ${config.bg} ${config.text}`}>
       <Icon size={14} />
       {status}
+    </span>
+  );
+}
+
+function WalletTransactionTypeBadge({ type }: { type: string }) {
+  const typeConfig: any = {
+    BUYER_PAYMENT: { bg: 'bg-red-100', text: 'text-red-800' },
+    SELLER_PAYMENT: { bg: 'bg-green-100', text: 'text-green-800' },
+    SYSTEM_FEE: { bg: 'bg-purple-100', text: 'text-purple-800' },
+    DEPOSIT: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    WITHDRAW: { bg: 'bg-orange-100', text: 'text-orange-800' },
+    FREEZE: { bg: 'bg-gray-100', text: 'text-gray-800' },
+    UNFREEZE: { bg: 'bg-gray-100', text: 'text-gray-800' },
+    DEDUCT: { bg: 'bg-red-100', text: 'text-red-800' },
+    REFUND: { bg: 'bg-green-100', text: 'text-green-800' },
+    ADMIN_ADJUSTMENT: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+  };
+
+  const config = typeConfig[type] || { bg: 'bg-gray-100', text: 'text-gray-800' };
+
+  return (
+    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded ${config.bg} ${config.text}`}>
+      {type}
     </span>
   );
 }
